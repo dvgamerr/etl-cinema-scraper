@@ -1,0 +1,13 @@
+version: 0.2
+
+phases:
+  install:
+    commands:
+      - npm i
+    finally:
+      - npm run eslint
+      - npm test
+
+cache:
+  paths:
+    - node_modules
