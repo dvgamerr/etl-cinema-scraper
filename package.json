@@ -23,7 +23,7 @@
   "homepage": "https://github.com/dvgamerr/task-pollution-air#readme",
   "dependencies": {
     "@line/bot-sdk": "^6.4.0",
-    "@touno-io/db": "^1.4.3",
+    "@touno-io/db": "^1.5.0",
     "@touno-io/debuger": "^1.4.5",
     "@touno-io/tasks": "^1.0.0",
     "cron": "^1.6.0",
