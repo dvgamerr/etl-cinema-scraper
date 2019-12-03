@@ -1,31 +1,26 @@
 {
-  "name": "task-pollution-air",
+  "name": "task-cinema-weekly",
   "version": "1.0.0",
-  "description": "pollution api",
+  "description": "cinema dump data from website",
   "main": "index.js",
   "scripts": {
-    "test": "mocha",
-    "dev": "env-cmd .env backpack dev",
-    "dump": "env-cmd .env node wakadump.js",
-    "build": "backpack build",
-    "start": "node dist/main.js --no-deprecation",
+    "dev": "env-cmd nodemon index.js",
+    "start": "node index.js",
     "eslint": "eslint --ext .js --ignore-path .eslintignore ."
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/dvgamerr/task-pollution-air.git"
+    "url": "git+https://github.com/dvgamerr/task-cinema-weekly.git"
   },
   "author": "Kananek Thongkam",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/dvgamerr/task-pollution-air/issues"
+    "url": "https://github.com/dvgamerr/task-cinema-weekly/issues"
   },
-  "homepage": "https://github.com/dvgamerr/task-pollution-air#readme",
+  "homepage": "https://github.com/dvgamerr/task-cinema-weekly#readme",
   "dependencies": {
-    "@line/bot-sdk": "^6.4.0",
-    "@touno-io/db": "^1.5.0",
-    "@touno-io/debuger": "^1.4.5",
-    "@touno-io/tasks": "^1.0.0",
+    "@touno-io/db": "^2.4.2",
+    "@touno-io/debuger": "^2.0.2",
     "cron": "^1.6.0",
     "moment": "^2.24.0",
     "numeral": "^2.0.6",
@@ -33,22 +28,8 @@
     "request-promise": "^4.2.1"
   },
   "devDependencies": {
-    "@babel/core": "^7.0.0",
-    "@babel/plugin-proposal-do-expressions": "^7.0.0",
-    "babel-eslint": "^10.0.1",
-    "babel-preset-env": "^1.7.0",
-    "backpack-core": "^0.8.3",
-    "env-cmd": "^8.0.2",
-    "eslint": "^5.13.0",
-    "eslint-config-standard": "^12.0.0",
-    "eslint-plugin-html": "^5.0.3",
-    "eslint-plugin-import": "^2.16.0",
-    "eslint-plugin-mocha": "^5.2.1",
-    "eslint-plugin-node": "^8.0.1",
-    "eslint-plugin-promise": "^4.0.1",
-    "eslint-plugin-standard": "^4.0.0",
-    "mocha": "^5.2.0",
-    "youch": "^2.0.10",
-    "youch-terminal": "^1.0.0"
+    "env-cmd": "^10.0.1",
+    "eslint": "^6.7.2",
+    "nodemon": "^2.0.1"
   }
 }
