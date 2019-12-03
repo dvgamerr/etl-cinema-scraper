@@ -49,8 +49,7 @@ module.exports = (msg, movies = []) => {
             layout: 'vertical',
             contents: poster,
             paddingAll: '0px',
-            cornerRadius: '0px',
-            action: { type: 'uri', label: 'action', uri: e.link }
+            cornerRadius: '0px'
           },
           {
             type: 'box',
@@ -66,7 +65,8 @@ module.exports = (msg, movies = []) => {
             paddingStart: '20px',
             paddingTop: '10px',
             paddingBottom: '10px',
-            paddingEnd: '10px'
+            paddingEnd: '10px',
+            action: { type: 'uri', label: 'action', uri: e.link }
           }
         ],
         paddingAll: '0px',
