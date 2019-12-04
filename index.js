@@ -117,21 +117,26 @@ const beginDumperWeb = async (init = false) => {
   await project.close()
   if (newCinema > 0) server.info(`Cinema new ${newCinema} movie`)
 
-  if (!init) {
+  if (!init && newCinema > 0) {
     let showen = []
-    server.info(`LINE Flex ${Math.ceil(newMovies.length / 10)}`)
+    let groups = Math.ceil(newMovies.length / 10)
+    let i = 1
+    server.info(`LINE Flex ${groups}`)
+
+    const sendPoster = async (msg, items) => {
+      await request({ url: bot, method: 'PUT', json: true, body: flexPoster(msg, items)  })
+      server.info(` - Carousel ${items.length} poster.`)
+    }
+
     for (const item of newMovies) {
       showen.push(item)
       if (showen.length === 10) {
-         await request({ url: bot, method: 'PUT', json: true, body: flexPoster(`ป๊อปคอนขอเสนอ โปรแกรมหนังประจำสัปดาห์ที่ ${weekly} ครับผม`, showen)  })
-        server.info(` - Carousel ${showen.length} poster.`)
+        await sendPoster(`ป๊อปคอนขอเสนอ โปรแกรมหนังประจำสัปดาห์ที่ ${weekly}${groups > 1 ? ` [${i}/${groups}]` : ''} ครับผม`, showen)
         showen = []
+        i++
       }
     }
-    if (showen.length > 0) {
-      if (!init) await request({ url: bot, method: 'PUT', json: true, body: flexPoster(`ป๊อปคอนขอเสนอ โปรแกรมหนังประจำสัปดาห์ที่ ${weekly} ครับผม`, showen)  })
-      server.info(` - Carousel ${showen.length} poster.`)
-    }
+    if (showen.length > 0) await sendPoster(`ป๊อปคอนขอเสนอ โปรแกรมหนังประจำสัปดาห์ที่ ${weekly}${groups > 1 ? ` [${i}/${groups}]` : ''} ครับผม`, showen)
   }
   server.success('Major and SFCinema Downloaded.')
 }
