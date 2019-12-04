@@ -19,10 +19,11 @@
   },
   "homepage": "https://github.com/dvgamerr/task-cinema-weekly#readme",
   "dependencies": {
-    "@touno-io/db": "^2.4.2",
+    "@touno-io/db": "^2.5.0",
     "@touno-io/debuger": "^2.0.2",
     "cron": "^1.6.0",
     "moment": "^2.24.0",
+    "node-cron": "^2.0.3",
     "numeral": "^2.0.6",
     "request": "^2.87.0",
     "request-promise": "^4.2.1"

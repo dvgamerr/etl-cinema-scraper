@@ -1,6 +1,8 @@
 const debuger = require('@touno-io/debuger')
+const { project } = require('@touno-io/db/schema')
 const request = require('request-promise')
 const moment = require('moment')
+const cron = require('node-cron')
 
 const flexPoster = require('./notify/flex')
 
@@ -58,7 +60,9 @@ const InitSF = async () => {
     if (!item) continue
 
     item = item.groups
-    item.link = `https://www.sfcinemacity.com/movie/${item.link.trim()}`
+    item.display = item.name.trim()
+    item.name = item.link.trim()
+    item.link = `https://www.sfcinemacity.com/movie/${item.name}`
     if (checkDuplicate(movies, item)) continue
     
     let date = moment().startOf('week').add(-1, 'd')
@@ -69,7 +73,6 @@ const InitSF = async () => {
       if (release.toISOString() !== date.add(1, 'd').toISOString()) continue
       
       res = await request.get(item.link)
-      item.display = item.name
       item.time = /class="movie-detail"[\w\W]+?class="system"[\w\W]+?<\/span><span>(.*?)นาที<\/span>/ig.exec(res)[1].trim() + ' นาที'
       item.cinema = { sf: true }
       movies.push(JSON.parse(JSON.stringify(item)))
@@ -81,14 +84,17 @@ const InitSF = async () => {
 }
 
 const server = debuger('Cinema')
-server.start('Movie Collection Search...')
-Promise.all([ InitMajor(), InitSF() ]).then(async ([ major, sf ]) => {
+const beginDumperWeb = async (init = false) => {
+  server.start('Movie Collection Search...')
+  const [ major, sf ] = await Promise.all([ InitMajor(), InitSF() ])
+
   let movies = []
   for (const item1 of major.concat(sf)) {
     let duplicateMovie = false
     for (const item2 of movies) {
       if (item1.display == item2.display) {
         duplicateMovie = true
+        item2.img = item1.img
         item2.cinema = Object.assign(item1.cinema, item2.cinema)
         break
       }
@@ -96,21 +102,41 @@ Promise.all([ InitMajor(), InitSF() ]).then(async ([ major, sf ]) => {
     if (!duplicateMovie) movies.push(item1)
   }
 
-  let showen = []
-  server.info(`LINE Flex ${Math.ceil(movies.length / 10)}`)
+  await project.open()
+  const { Cinema } = project.get()
+  const weekly = moment().week()
+  let newCinema = 0
+  let newMovies = []
   for (const item of movies) {
-    showen.push(item)
-    if (showen.length === 10) {
-      await request({ url: bot, method: 'PUT', json: true, body: flexPoster(`ป๊อปคอนขอเสนอ โปรแกรมหนังประจำสัปดาห์ที่ ${moment().week()} ครับผม`, showen)  })
-      server.info(` - Carousel ${showen.length} poster.`)
-      showen = []
+    if (!(await Cinema.findOne({ name: item.name, release: item.release }))) {
+      newMovies.push(item)
+      await new Cinema(Object.assign(item, { weekly })).save()
+      newCinema++
     }
   }
-  if (showen.length > 0) {
-    await request({ url: bot, method: 'PUT', json: true, body: flexPoster(`ป๊อปคอนขอเสนอ โปรแกรมหนังประจำสัปดาห์ที่ ${moment().week()} ครับผม`, showen)  })
-    server.info(` - Carousel ${showen.length} poster.`)
+  await project.close()
+  if (newCinema > 0) server.info(`Cinema new ${newCinema} movie`)
+
+  if (!init) {
+    let showen = []
+    server.info(`LINE Flex ${Math.ceil(newMovies.length / 10)}`)
+    for (const item of newMovies) {
+      showen.push(item)
+      if (showen.length === 10) {
+         await request({ url: bot, method: 'PUT', json: true, body: flexPoster(`ป๊อปคอนขอเสนอ โปรแกรมหนังประจำสัปดาห์ที่ ${weekly} ครับผม`, showen)  })
+        server.info(` - Carousel ${showen.length} poster.`)
+        showen = []
+      }
+    }
+    if (showen.length > 0) {
+      if (!init) await request({ url: bot, method: 'PUT', json: true, body: flexPoster(`ป๊อปคอนขอเสนอ โปรแกรมหนังประจำสัปดาห์ที่ ${weekly} ครับผม`, showen)  })
+      server.info(` - Carousel ${showen.length} poster.`)
+    }
   }
-  server.success('Major and SFcinema Downloaded.')
-}).catch(ex => {
-  server.error(ex)
+  server.success('Major and SFCinema Downloaded.')
+}
+
+beginDumperWeb(true).then(async () => {
+  server.log('Major and SFCinema crontab at 8:00 am. every monday and wednesday.')
+  return cron.schedule('0 8 * * 1,3', beginDumperWeb)
 })
