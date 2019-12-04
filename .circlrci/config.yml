@@ -1,47 +1,25 @@
-# Javascript Node CircleCI 2.0 configuration file
-#
-# ## README ##
-# Environment add in setting 'SSH_SERVER'
-# Add SSh authtication with private key.
-#
-# Check https://circleci.com/docs/2.0/language-javascript/ for more details
 version: 2
 jobs:
   build:
     environment:
-      DEPLOY_PATH: "/app/.build/"
-      PROJECT: "task-pollution"
+      PROJECT: "task-cinema-weekly"
     working_directory: ~/app
     docker:
       - image: circleci/node
     steps:
       - checkout
-      - run:
-          name: Current Branch
-          command: echo ${CIRCLE_BRANCH}
       - restore_cache:
           keys:
-          - v1-dependencies-{{ checksum "package.json" }}
-          - v1-dependencies-
-      - run:
-          name: Package Install
-          command: npm i
+          - v1-dependency-{{ checksum "package.json" }}
+          - v1-dependency-
+      - run: npm i
+      - run: npm run eslint
       - save_cache:
           paths:
             - node_modules
-          key: v1-dependencies-{{ checksum "package.json" }}
-      - run:
-          name: Unit-Test CI/CD
-          command: npm test
-      - run:
-          name: ESLint JavaScript linter
-          command: npm run eslint
-      - run:
-          name: Project Building
-          command: npm run build
-      - run:
-          name: Project Compress
-          command: tar czf ~/$PROJECT-$CIRCLE_BUILD_NUM-$(date +%Y%m%d%H%M%S).tar.gz ./package.json ./dist/*.js
-      - run:
-          name: Project Deploy AWS
-          command: scp -o StrictHostKeyChecking=no ~/$PROJECT-$CIRCLE_BUILD_NUM-$(date +%Y%m%d%H%M%S).tar.gz ec2-user@$SSH_SERVER:$DEPLOY_PATH
+          key: v1-dependency-{{ checksum "package.json" }}
+      - setup_remote_docker
+      - run: docker login -u $DOCKER_USER --password $DOCKER_PASS container.touno.io
+      - run: docker build -t container.touno.io/$PROJECT:latest .
+      - run: PACKAGE_VERSION=v$(cat package.json | grep version | head -1 | sed 's/[version :\",]//g') && docker tag container.touno.io/$PROJECT:latest container.touno.io/$PROJECT:$PACKAGE_VERSION 
+      - run: docker push container.touno.io/$PROJECT
