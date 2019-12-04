@@ -31,7 +31,7 @@ module.exports = (msg, movies = []) => {
       position: 'absolute',
       offsetTop: '10px',
       cornerRadius: '5px',
-      width: '65px',
+      width: '70px',
       height: '25px',
       paddingStart: '4px',
       offsetEnd: `${(e.cinema.major ? 60 : 0) + 10}px`
