@@ -6,9 +6,10 @@ const cron = require('node-cron')
 
 const flexPoster = require('./notify/flex')
 
+const production = !(process.env.NODE_ENV === 'development')
 const major = `https://www.majorcineplex.com/movie`
 const sf = `https://www.sfcinemacity.com/movies/coming-soon`
-const bot = 'https://intense-citadel-55702.herokuapp.com/popcorn/movie'
+const bot = `https://intense-citadel-55702.herokuapp.com/popcorn/${production ? 'movie' : 'kem'}`
 
 const checkDuplicate = (movies, item) => {
   for (const movie of movies) {
@@ -32,15 +33,14 @@ const InitMajor = async () => {
     if (checkDuplicate(movies, item)) continue
 
     let date = moment().startOf('week').add(-1, 'd')
-    let release = moment(item.release.trim(), 'DD/MM/YY')
-    if (!release.isValid()) continue
+    item.release = moment(item.release.trim(), 'DD/MM/YY')
+    if (!item.release.isValid()) continue
 
     for (let i = 0; i < 7; i++) {
-      if (release.toISOString() !== date.add(1, 'd').toISOString()) continue
+      if (item.release.toISOString() !== date.add(1, 'd').toISOString()) continue
       
       res = await request.get(item.link.trim())
       item.display = /txt-namemovie.*?>([\w\W]+?)</.exec(res)[1].trim()
-      item.release = /descmovielength[\w\W]+?descmovielength[\w\W]+?<span>([\w\W]+?)</.exec(res)[1].trim()
       item.time = /descmovielength[\w\W]+?<span>([\w\W]+?)</.exec(res)[1].trim()
       item.cinema = { major: true }
       movies.push(JSON.parse(JSON.stringify(item)))
@@ -66,11 +66,11 @@ const InitSF = async () => {
     if (checkDuplicate(movies, item)) continue
     
     let date = moment().startOf('week').add(-1, 'd')
-    let release = moment(item.release.trim(), 'YYYY-MM-DD')
-    if (!release.isValid()) continue
+    item.release = moment(item.release.trim(), 'YYYY-MM-DD')
+    if (!item.release.isValid()) continue
 
     for (let i = 0; i < 7; i++) {
-      if (release.toISOString() !== date.add(1, 'd').toISOString()) continue
+      if (item.release.toISOString() !== date.add(1, 'd').toISOString()) continue
       
       res = await request.get(item.link)
       item.time = /class="movie-detail"[\w\W]+?class="system"[\w\W]+?<\/span><span>(.*?)นาที<\/span>/ig.exec(res)[1].trim() + ' นาที'
@@ -84,7 +84,7 @@ const InitSF = async () => {
 }
 
 const server = debuger('Cinema')
-const beginDumperWeb = async (init = false) => {
+const beginDumperWeb = async () => {
   server.start('Movie Collection Search...')
   const [ major, sf ] = await Promise.all([ InitMajor(), InitSF() ])
 
@@ -92,7 +92,7 @@ const beginDumperWeb = async (init = false) => {
   for (const item1 of major.concat(sf)) {
     let duplicateMovie = false
     for (const item2 of movies) {
-      if (item1.display == item2.display) {
+      if (item1.display.replace(/[-.!]+/ig,'') == item2.display.replace(/[-.!]+/ig,'')) {
         duplicateMovie = true
         item2.img = item1.img
         item2.cinema = Object.assign(item1.cinema, item2.cinema)
@@ -102,22 +102,23 @@ const beginDumperWeb = async (init = false) => {
     if (!duplicateMovie) movies.push(item1)
   }
 
-  await project.open()
-  const { Cinema } = project.get()
+  const { Cinema } = await project.get()
   const weekly = moment().week()
   let newCinema = 0
   let newMovies = []
   for (const item of movies) {
-    if (!(await Cinema.findOne({ name: item.name, release: item.release }))) {
+    if (!(await Cinema.findOne({ name: item.name, release: item.release.toDate() }))) {
       newMovies.push(item)
+
+      item.release = item.release.toDate()
       await new Cinema(Object.assign(item, { weekly })).save()
       newCinema++
     }
   }
-  await project.close()
-  if (newCinema > 0) server.info(`Cinema new ${newCinema} movie`)
 
-  if (!init && newCinema > 0) {
+  if (newCinema > 0) {
+    server.info(`Cinema new ${newCinema} movie`)
+
     let showen = []
     let groups = Math.ceil(newMovies.length / 10)
     let i = 1
@@ -141,7 +142,10 @@ const beginDumperWeb = async (init = false) => {
   server.success('Major and SFCinema Downloaded.')
 }
 
-beginDumperWeb(true).then(async () => {
+project.open().then(async () => {
   server.log('Major and SFCinema crontab at 8:00 am. every monday and wednesday.')
+  if (!production) {
+    await beginDumperWeb()
+  }
   return cron.schedule('0 8 * * 1,3', beginDumperWeb)
 })
