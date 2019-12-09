@@ -62,6 +62,7 @@ const InitSF = async () => {
     item = item.groups
     item.display = item.name.trim()
     item.name = item.link.trim()
+    item.img = item.img.replace(/=w\d+$/,'')
     item.link = `https://www.sfcinemacity.com/movie/${item.name}`
     if (checkDuplicate(movies, item)) continue
     
@@ -94,7 +95,6 @@ const beginDumperWeb = async () => {
     for (const item2 of movies) {
       if (item1.display.replace(/[-.! ]+/ig,'') == item2.display.replace(/[-.! ]+/ig,'')) {
         duplicateMovie = true
-        item2.img = item1.img
         item2.cinema = Object.assign(item1.cinema, item2.cinema)
         break
       }
