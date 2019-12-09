@@ -1,8 +1,7 @@
+const moment = require('moment')
+
 module.exports = (msg, movies = []) => {
-
-
   let flex = movies.map(e => {
-
     let poster = [ { type: 'image', url: e.img, size: 'full', aspectMode: 'cover', aspectRatio: '120:190', gravity: 'center', flex: 1 } ]
     if (e.cinema.major) poster.push({
       type: 'box',
@@ -56,7 +55,8 @@ module.exports = (msg, movies = []) => {
             layout: 'vertical',
             contents: [
               { type: 'text', text: e.display, color: '#ffffff', size: 'sm', weight: 'bold' },
-              { type: 'text', text: `${e.release}`, color: '#ffffffcc', size: 'xxs' }
+              { type: 'text', text: `${moment(e.release).locale('th-TH').format('DD MMMM YYYY')}`, color: '#ffffffcc', size: 'xxs' },
+              { type: 'text', text: `${e.time} นาที`, color: '#ffffff', size: 'xxs', weight: 'regular', position: 'absolute', offsetTop: '29px', offsetEnd: '10px' }
             ],
             position: 'absolute',
             backgroundColor: '#464F69cc',

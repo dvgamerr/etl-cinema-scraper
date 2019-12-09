@@ -41,7 +41,7 @@ const InitMajor = async () => {
       
       res = await request.get(item.link.trim())
       item.display = /txt-namemovie.*?>([\w\W]+?)</.exec(res)[1].trim()
-      item.time = /descmovielength[\w\W]+?<span>([\w\W]+?)</.exec(res)[1].trim()
+      item.time = parseInt(/descmovielength[\w\W]+?<span>([\w\W]+?)</.exec(res)[1].trim())
       item.cinema = { major: true }
       movies.push(JSON.parse(JSON.stringify(item)))
       break
@@ -73,7 +73,7 @@ const InitSF = async () => {
       if (item.release.toISOString() !== date.add(1, 'd').toISOString()) continue
       
       res = await request.get(item.link)
-      item.time = /class="movie-detail"[\w\W]+?class="system"[\w\W]+?<\/span><span>(.*?)นาที<\/span>/ig.exec(res)[1].trim() + ' นาที'
+      item.time = parseInt(/class="movie-detail"[\w\W]+?class="system"[\w\W]+?<\/span><span>(.*?)นาที<\/span>/ig.exec(res)[1].trim())
       item.cinema = { sf: true }
       movies.push(JSON.parse(JSON.stringify(item)))
       break
@@ -92,7 +92,7 @@ const beginDumperWeb = async () => {
   for (const item1 of major.concat(sf)) {
     let duplicateMovie = false
     for (const item2 of movies) {
-      if (item1.display.replace(/[-.!]+/ig,'') == item2.display.replace(/[-.!]+/ig,'')) {
+      if (item1.display.replace(/[-.! ]+/ig,'') == item2.display.replace(/[-.! ]+/ig,'')) {
         duplicateMovie = true
         item2.img = item1.img
         item2.cinema = Object.assign(item1.cinema, item2.cinema)
@@ -102,15 +102,15 @@ const beginDumperWeb = async () => {
     if (!duplicateMovie) movies.push(item1)
   }
 
+  movies = movies.sort((a, b) => a.release > b.release ? 1 : -1)
   const { Cinema } = await project.get()
   const weekly = moment().week()
   let newCinema = 0
   let newMovies = []
   for (const item of movies) {
-    if (!(await Cinema.findOne({ name: item.name, release: item.release.toDate() }))) {
+    if (!(await Cinema.findOne({ name: item.name, release: item.release }))) {
       newMovies.push(item)
 
-      item.release = item.release.toDate()
       await new Cinema(Object.assign(item, { weekly })).save()
       newCinema++
     }
