@@ -13,9 +13,7 @@ const bot = `https://intense-citadel-55702.herokuapp.com/popcorn/${production ? 
 
 const checkDuplicate = (movies, item) => {
   for (const movie of movies) {
-    if (movie.name === item.name) {
-      return true
-    }
+    if (movie.name === item.name || movie.display.replace(/[-.! ]+/ig,'') == item.display.replace(/[-.! ]+/ig,'')) return true
   }
   return false
 }
@@ -36,7 +34,7 @@ const InitMajor = async () => {
     item.release = moment(item.release.trim(), 'DD/MM/YY')
     if (!item.release.isValid()) continue
 
-    for (let i = 0; i < 7; i++) {
+    for (let i = 0; i < 14; i++) {
       if (item.release.toISOString() !== date.add(1, 'd').toISOString()) continue
       
       res = await request.get(item.link.trim())
@@ -70,7 +68,7 @@ const InitSF = async () => {
     item.release = moment(item.release.trim(), 'YYYY-MM-DD')
     if (!item.release.isValid()) continue
 
-    for (let i = 0; i < 7; i++) {
+    for (let i = 0; i < 14; i++) {
       if (item.release.toISOString() !== date.add(1, 'd').toISOString()) continue
       
       res = await request.get(item.link)
@@ -85,9 +83,10 @@ const InitSF = async () => {
 }
 
 const server = debuger('Cinema')
-const beginDumperWeb = async () => {
-  server.start('Movie Collection Search...')
+const downloadMovieItem = async () => {
+  server.start('Collection Search...')
   const [ major, sf ] = await Promise.all([ InitMajor(), InitSF() ])
+  server.info(`Major: ${major.length} and SF: ${sf.length}`)
 
   let movies = []
   for (const item1 of major.concat(sf)) {
@@ -104,48 +103,67 @@ const beginDumperWeb = async () => {
 
   movies = movies.sort((a, b) => a.release > b.release ? 1 : -1)
   const { Cinema } = await project.get()
-  const weekly = moment().week()
-  let newCinema = 0
-  let newMovies = []
+  let newMovies = 0
   for (const item of movies) {
     if (!(await Cinema.findOne({ name: item.name, release: item.release }))) {
-      newMovies.push(item)
-
+      newMovies++
+      const weekly = moment(item.release).week()
       await new Cinema(Object.assign(item, { weekly })).save()
-      newCinema++
     }
   }
+  if (newMovies > 0) server.info(`New cinema add ${newMovies} movies.`)
+  server.success('Save Downloaded.')
+}
 
-  if (newCinema > 0) {
-    server.info(`Cinema new ${newCinema} movie`)
+const notifyDailyMovies = async () => {
+  const { Cinema } = await project.get()
+  let movies = await Cinema.find({ release: moment().startOf('day').toDate() })
+  server.info(`Today has ${movies.length} movie`)
+  if (movies.length === 0) return
 
-    let showen = []
-    let groups = Math.ceil(newMovies.length / 10)
-    let i = 1
-    server.info(`LINE Flex ${groups}`)
+  movies = movies.map((e, i) => `${i + 1}. ${e.display} (${e.time} นาที)`)
+  await request({ url: bot, method: 'PUT', json: true, body: { type: 'text', text: `*ภาพยนตร์ที่เข้าฉายวันนี้*\n${movies.join('\n')}` }  })
+}
 
-    const sendPoster = async (msg, items) => {
-      await request({ url: bot, method: 'PUT', json: true, body: flexPoster(msg, items)  })
-      server.info(` - Carousel ${items.length} poster.`)
-    }
+const notifyWeeklyMovies = async () => {
+  const { Cinema } = await project.get()
+  let weekly = moment().week()
+  let movies = await Cinema.find({ weekly, year: moment().year() }, null, { $sort: { release: 1 } })
+  server.info(`Weekly new ${movies.length} movie`)
+  if (movies.length === 0) return
 
-    for (const item of newMovies) {
-      showen.push(item)
-      if (showen.length === 10) {
-        await sendPoster(`ป๊อปคอนขอเสนอ โปรแกรมหนังประจำสัปดาห์ที่ ${weekly}${groups > 1 ? ` [${i}/${groups}]` : ''} ครับผม`, showen)
-        showen = []
-        i++
-      }
-    }
-    if (showen.length > 0) await sendPoster(`ป๊อปคอนขอเสนอ โปรแกรมหนังประจำสัปดาห์ที่ ${weekly}${groups > 1 ? ` [${i}/${groups}]` : ''} ครับผม`, showen)
+  let showen = []
+  let groups = Math.ceil(movies.length / 10)
+  let i = 1
+  server.info(`LINE Flex ${groups} sacle`)
+
+  const sendPoster = async (msg, items) => {
+    await request({ url: bot, method: 'PUT', json: true, body: flexPoster(msg, items)  })
   }
-  server.success('Major and SFCinema Downloaded.')
+
+  for (const item of movies) {
+    showen.push(item)
+    if (showen.length === 10) {
+      await sendPoster(`ป๊อปคอนขอเสนอ โปรแกรมหนังประจำสัปดาห์ที่ ${weekly}${groups > 1 ? ` [${i}/${groups}]` : ''} ครับผม`, showen)
+      showen = []
+      i++
+    }
+  }
+  if (showen.length > 0) await sendPoster(`ป๊อปคอนขอเสนอ โปรแกรมหนังประจำสัปดาห์ที่ ${weekly}${groups > 1 ? ` [${i}/${groups}]` : ''} ครับผม`, showen)
 }
 
 project.open().then(async () => {
-  server.log('Major and SFCinema crontab at 8:00 am. every monday and wednesday.')
   if (!production) {
-    await beginDumperWeb()
+    await notifyWeeklyMovies()
+    await notifyDailyMovies()
   }
-  return cron.schedule('0 8 * * 1,3', beginDumperWeb)
+
+  server.log('Major and SFCinema dumper at 7:50 am. every day.')
+  cron.schedule('50 7 * * *', downloadMovieItem)
+
+  server.log('Notify movies in week at 8:00 am. every monday.')
+  cron.schedule('0 8 * * 1', notifyWeeklyMovies)
+
+  server.log('Notify daily at 8:00 am. not monday.')
+  cron.schedule('0 8 * * 2,3,4,5', notifyDailyMovies)
 })
