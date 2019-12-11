@@ -13,7 +13,8 @@ const bot = `https://intense-citadel-55702.herokuapp.com/popcorn/${production ? 
 
 const checkDuplicate = (movies, item) => {
   for (const movie of movies) {
-    if (movie.name === item.name || movie.display.replace(/[-.! ]+/ig,'') == item.display.replace(/[-.! ]+/ig,'')) return true
+    if (movie.name === item.name) return true
+    if (movie.display && item.display && movie.display.replace(/[-.! ]+/ig,'') == item.display.replace(/[-.! ]+/ig,'')) return true
   }
   return false
 }
@@ -154,8 +155,9 @@ const notifyWeeklyMovies = async () => {
 
 project.open().then(async () => {
   if (!production) {
-    await notifyWeeklyMovies()
-    await notifyDailyMovies()
+    await downloadMovieItem()
+    // await notifyWeeklyMovies()
+    // await notifyDailyMovies()
   }
 
   server.log('Major and SFCinema dumper at 7:50 am. every day.')
