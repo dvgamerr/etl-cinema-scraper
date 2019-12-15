@@ -12,11 +12,11 @@ const sf = `https://www.sfcinemacity.com/movies/coming-soon`
 const bot = `https://intense-citadel-55702.herokuapp.com/popcorn/${production ? 'movie' : 'kem'}`
 
 
+const cleanText = (n = '') => n.toLowerCase().replace(/[-.!: ]+/ig, '')
 
 const checkMovieName = (a, b) => {
-  return a.name === b.name || (a.display && b.display && a.display.replace(/[-.!: ]+/ig,'') == b.display.replace(/[-.!: ]+/ig,''))
+  return a.name === b.name || (a.display && b.display && (cleanText(a.display) == cleanText(b.display) || cleanText(a.name) == cleanText(b.display) || cleanText(b.name) == cleanText(a.display)))
 }
-
 
 const isDuplicateInArray = (movies, item) => {
   for (const movie of movies) {
@@ -34,7 +34,7 @@ const InitMajor = async () => {
     let item = /href="(?<link>.*?)"[\w\W]*"?img.*?src="(?<img>.*?)"[\w\W]*?วันที่เข้าฉาย:(?<release>[\w\W]+?)</ig.exec(movie)
     if (!item) continue
     item = item.groups
-    item.name = item.link.trim().replace('https://www.majorcineplex.com/movie/', '')
+    item.name = cleanText(item.link.trim().replace('https://www.majorcineplex.com/movie/', ''))
     if (isDuplicateInArray(movies, item)) continue
 
     let date = moment().startOf('week').add(-1, 'd')
@@ -66,7 +66,7 @@ const InitSF = async () => {
 
     item = item.groups
     item.display = item.name.trim()
-    item.name = item.link.trim()
+    item.name = cleanText(item.link.trim())
     item.img = item.img.replace(/=w\d+$/,'')
     item.link = `https://www.sfcinemacity.com/movie/${item.name}`
     if (isDuplicateInArray(movies, item)) continue
@@ -79,7 +79,7 @@ const InitSF = async () => {
       if (item.release.toISOString() !== date.add(1, 'd').toISOString()) continue
       
       res = await request.get(item.link)
-      item.time = parseInt(/class="movie-detail"[\w\W]+?class="system"[\w\W]+?<\/span><span>(.*?)นาที<\/span>/ig.exec(res)[1].trim())
+      item.time = parseInt(((/class="movie-detail"[\w\W]+?class="system"[\w\W]+?<\/span><span>(.*?)นาที<\/span>/ig.exec(res) || [])[1] || '0').trim())
       item.cinema = { sf: true }
       movies.push(JSON.parse(JSON.stringify(item)))
       break
@@ -112,12 +112,28 @@ const downloadMovieItem = async () => {
   const { Cinema } = await project.get()
   let newMovies = []
   let currentWeekly = moment().week()
+  
   for (const item of movies) {
-    if (!(await Cinema.findOne({ name: item.name, release: item.release }))) {
-      const weekly = moment(item.release).week()
-      const year = moment(item.release).year()
-      await new Cinema(Object.assign(item, { weekly, year })).save()
-      if (currentWeekly === weekly) newMovies.push(item)
+    let weekly = moment(item.release).week()
+    let year = moment(item.release).year()
+    
+    let findItem = await Cinema.findOne({ $or: [ { name: item.name }, { display: item.display } ] })
+    if (!findItem) {
+      let isMatch = false
+      for (const movie of (await Cinema.find({ release: item.release }))) {
+        if (checkMovieName(movie, item)) {
+          isMatch = true
+          break
+        }
+      }
+      if (!isMatch) {
+        let newItem = Object.assign(item, { weekly, year })
+        if (!production) console.log(newItem)
+        await new Cinema(Object.assign(item, { weekly, year })).save()
+        if (currentWeekly === weekly) newMovies.push(item)
+      }
+    } else {
+      await Cinema.updateOne({ _id: findItem._id }, { $set: item })
     }
   }
   if (newMovies.length > 0) {
@@ -128,7 +144,7 @@ const downloadMovieItem = async () => {
 }
 
 const sendPoster = async (msg, items) => {
-  await request({ url: bot, method: 'PUT', json: true, body: flexPoster(msg, items)  })
+  if (production) await request({ url: bot, method: 'PUT', json: true, body: flexPoster(msg, items)  })
 }
 
 const notifyDailyMovies = async () => {
@@ -167,7 +183,7 @@ const notifyWeeklyMovies = async () => {
 project.open().then(async () => {
   if (!production) {
     await downloadMovieItem()
-    // await notifyWeeklyMovies()
+    await notifyWeeklyMovies()
     // await notifyDailyMovies()
   }
 

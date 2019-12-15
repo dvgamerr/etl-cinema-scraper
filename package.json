@@ -19,7 +19,7 @@
   },
   "homepage": "https://github.com/dvgamerr/task-cinema-weekly#readme",
   "dependencies": {
-    "@touno-io/db": "^2.5.2",
+    "@touno-io/db": "^2.5.3",
     "@touno-io/debuger": "^2.0.2",
     "cron": "^1.6.0",
     "moment": "^2.24.0",
@@ -31,7 +31,7 @@
   "devDependencies": {
     "env-cmd": "^10.0.1",
     "eslint": "^6.7.2",
-    "nodemon": "^2.0.1"
+    "nodemon": "^2.0.2"
   },
   "keywords": [
     "cinema"
