@@ -11,6 +11,22 @@ const major = `https://www.majorcineplex.com/movie`
 const sf = `https://www.sfcinemacity.com/movies/coming-soon`
 const bot = `https://intense-citadel-55702.herokuapp.com/popcorn/${production ? 'movie' : 'kem'}`
 
+const reqRetry = async (get_url, retry = 3) => {
+  let i = 0
+  let success = false
+  let res = {}
+  do {
+    try {
+      res = await request.get(get_url)
+      success = true
+    } catch (ex) {
+      i++
+      if (i >= retry) throw ex
+    }
+  } while (i < retry && !success)
+  return res
+}
+
 
 const cleanText = (n = '') => n.toLowerCase().replace(/[-.!: ]+/ig, '')
 
@@ -27,7 +43,7 @@ const isDuplicateInArray = (movies, item) => {
 
 const InitMajor = async () => {
   const logger = debuger('Major')
-  let res = await request.get(major)
+  let res = await reqRetry(major)
   let movies = []
   
   for (const movie of res.match(/class="eachMovie"[\w\W]+?class="secondexplain/ig)) {
@@ -44,7 +60,7 @@ const InitMajor = async () => {
     for (let i = 0; i < 14; i++) {
       if (item.release.toISOString() !== date.add(1, 'd').toISOString()) continue
       
-      res = await request.get(item.link.trim())
+      res = await reqRetry(item.link.trim())
       item.display = /txt-namemovie.*?>([\w\W]+?)</.exec(res)[1].trim()
       item.time = parseInt(/descmovielength[\w\W]+?<span>([\w\W]+?)</.exec(res)[1].trim())
       item.cinema = { major: true }
@@ -78,7 +94,7 @@ const InitSF = async () => {
     for (let i = 0; i < 14; i++) {
       if (item.release.toISOString() !== date.add(1, 'd').toISOString()) continue
       
-      res = await request.get(item.link)
+      res = await reqRetry(item.link)
       item.time = parseInt(((/class="movie-detail"[\w\W]+?class="system"[\w\W]+?<\/span><span>(.*?)นาที<\/span>/ig.exec(res) || [])[1] || '0').trim())
       item.cinema = { sf: true }
       movies.push(JSON.parse(JSON.stringify(item)))
