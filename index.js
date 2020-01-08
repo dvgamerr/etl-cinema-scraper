@@ -1,5 +1,5 @@
 const debuger = require('@touno-io/debuger')
-const { project } = require('@touno-io/db/schema')
+const { task } = require('@touno-io/db/schema')
 const request = require('request-promise')
 const moment = require('moment')
 const cron = require('node-cron')
@@ -28,7 +28,7 @@ const reqRetry = async (get_url, retry = 3) => {
 }
 
 
-const cleanText = (n = '') => n.toLowerCase().replace(/[-.!: ]+/ig, '')
+const cleanText = (n = '') => n.toLowerCase().replace(/[-.!: /\\_]+/ig, '')
 
 const checkMovieName = (a, b) => {
   return a.name === b.name || (a.display && b.display && (cleanText(a.display) == cleanText(b.display) || cleanText(a.name) == cleanText(b.display) || cleanText(b.name) == cleanText(a.display)))
@@ -107,56 +107,64 @@ const InitSF = async () => {
 
 const server = debuger('Cinema')
 const downloadMovieItem = async () => {
-  server.start('Collection Search...')
-  const [ major, sf ] = await Promise.all([ InitMajor(), InitSF() ])
-  server.info(`Major: ${major.length} and SF: ${sf.length}`)
+  try {
+    server.start('Collection Search...')
+    const [ major, sf ] = await Promise.all([ InitMajor(), InitSF() ])
+    server.info(`Major: ${major.length} and SF: ${sf.length}`)
 
-  let movies = []
-  for (const item1 of major.concat(sf)) {
-    let duplicateMovie = false
-    for (const item2 of movies) {
-      if (checkMovieName(item1, item2)) {
-        duplicateMovie = true
-        item2.cinema = Object.assign(item1.cinema, item2.cinema)
-        break
-      }
-    }
-    if (!duplicateMovie) movies.push(item1)
-  }
-  
-  movies = movies.sort((a, b) => a.release > b.release ? 1 : -1)
-  const { Cinema } = await project.get()
-  let newMovies = []
-  let currentWeekly = moment().week()
-  
-  for (const item of movies) {
-    let weekly = moment(item.release).week()
-    let year = moment(item.release).year()
-    
-    let findItem = await Cinema.findOne({ $or: [ { name: item.name }, { display: item.display } ] })
-    if (!findItem) {
-      let isMatch = false
-      for (const movie of (await Cinema.find({ release: item.release }))) {
-        if (checkMovieName(movie, item)) {
-          isMatch = true
+    let movies = []
+    for (const item1 of major.concat(sf)) {
+      let duplicateMovie = false
+      for (const item2 of movies) {
+        if (checkMovieName(item1, item2)) {
+          duplicateMovie = true
+          item2.cinema = Object.assign(item1.cinema, item2.cinema)
           break
         }
       }
-      if (!isMatch) {
-        let newItem = Object.assign(item, { weekly, year })
-        if (!production) console.log(newItem)
-        await new Cinema(Object.assign(item, { weekly, year })).save()
-        if (currentWeekly === weekly) newMovies.push(item)
-      }
-    } else {
-      await Cinema.updateOne({ _id: findItem._id }, { $set: item })
+      if (!duplicateMovie) movies.push(item1)
     }
+    
+    movies = movies.sort((a, b) => a.release > b.release ? 1 : -1)
+    const { Cinema } = await task.get()
+    let newMovies = []
+    let currentWeekly = moment().week()
+    
+    for (const item of movies) {
+      let weekly = moment(item.release).week()
+      let year = moment(item.release).year()
+      if (weekly === 1) {
+        for (const item of movies) {
+          if (year < moment(item.release).year()) year = moment(item.release).year()
+        }
+      }
+      let findItem = await Cinema.findOne({ $or: [ { name: item.name }, { display: item.display } ] })
+      if (!findItem) {
+        let isMatch = false
+        for (const movie of (await Cinema.find({ release: item.release }))) {
+          if (checkMovieName(movie, item)) {
+            isMatch = true
+            break
+          }
+        }
+        if (!isMatch) {
+          let newItem = Object.assign(item, { weekly, year })
+          if (!production) console.log(newItem)
+          await new Cinema(Object.assign(item, { weekly, year })).save()
+          if (currentWeekly === weekly) newMovies.push(item)
+        }
+      } else {
+        await Cinema.updateOne({ _id: findItem._id }, { $set: item })
+      }
+    }
+    if (newMovies.length > 0) {
+      server.info(`New cinema add ${newMovies.length} movies.`)
+      if (moment().day != 1) await sendPoster(`ป๊อปคอนมีหนังสัปดาห์นี้ มาเพิ่ม ${newMovies.length} เรื่องครับผม`, newMovies)
+    }
+    server.success('Save Downloaded.')
+  } catch (ex) {
+    server.error(ex)
   }
-  if (newMovies.length > 0) {
-    server.info(`New cinema add ${newMovies.length} movies.`)
-    if (moment().day != 1) await sendPoster(`ป๊อปคอนมีหนังสัปดาห์นี้ มาเพิ่ม ${newMovies.length} เรื่องครับผม`, newMovies)
-  }
-  server.success('Save Downloaded.')
 }
 
 const sendPoster = async (msg, items) => {
@@ -164,7 +172,7 @@ const sendPoster = async (msg, items) => {
 }
 
 const notifyDailyMovies = async () => {
-  const { Cinema } = await project.get()
+  const { Cinema } = await task.get()
   let movies = await Cinema.find({ release: moment().startOf('day').toDate() })
   server.info(`Today has ${movies.length} movie`)
   if (movies.length === 0) return
@@ -174,29 +182,34 @@ const notifyDailyMovies = async () => {
 }
 
 const notifyWeeklyMovies = async () => {
-  const { Cinema } = await project.get()
-  let weekly = moment().week()
-  let movies = await Cinema.find({ weekly, year: moment().year() }, null, { $sort: { release: 1 } })
-  server.info(`Weekly new ${movies.length} movie`)
-  if (movies.length === 0) return
+  try {
+    const { Cinema } = await task.get()
+    let weekly = moment().week()
+    let movies = await Cinema.find({ weekly, year: moment().year() }, null, { $sort: { release: 1 } })
+    server.info(`Weekly new ${movies.length} movie`)
+    if (movies.length === 0) return
 
-  let showen = []
-  let groups = Math.ceil(movies.length / 10)
-  let i = 1
-  server.info(`LINE Flex ${groups} sacle`)
+    let showen = []
+    let groups = Math.ceil(movies.length / 10)
+    let i = 1
+    server.info(`LINE Flex ${groups} sacle`)
 
-  for (const item of movies) {
-    showen.push(item)
-    if (showen.length === 10) {
-      await sendPoster(`ป๊อปคอนขอเสนอ โปรแกรมหนังประจำสัปดาห์ที่ ${weekly}${groups > 1 ? ` [${i}/${groups}]` : ''} ครับผม`, showen)
-      showen = []
-      i++
+    for (const item of movies) {
+      showen.push(item)
+      if (showen.length === 10) {
+        await sendPoster(`ป๊อปคอนขอเสนอ โปรแกรมหนังประจำสัปดาห์ที่ ${weekly}${groups > 1 ? ` [${i}/${groups}]` : ''} ครับผม`, showen)
+        showen = []
+        i++
+      }
     }
+    if (showen.length > 0) await sendPoster(`ป๊อปคอนขอเสนอ โปรแกรมหนังประจำสัปดาห์ที่ ${weekly}${groups > 1 ? ` [${i}/${groups}]` : ''} ครับผม`, showen)
+
+  } catch (ex) {
+    server.error(ex)
   }
-  if (showen.length > 0) await sendPoster(`ป๊อปคอนขอเสนอ โปรแกรมหนังประจำสัปดาห์ที่ ${weekly}${groups > 1 ? ` [${i}/${groups}]` : ''} ครับผม`, showen)
 }
 
-project.open().then(async () => {
+task.open().then(async () => {
   if (!production) {
     await downloadMovieItem()
     await notifyWeeklyMovies()
