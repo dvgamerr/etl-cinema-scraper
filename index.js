@@ -59,10 +59,15 @@ const InitMajor = async () => {
 
     for (let i = 0; i < 14; i++) {
       if (item.release.toISOString() !== date.add(1, 'd').toISOString()) continue
-      
-      res = await reqRetry(item.link.trim())
-      item.display = /txt-namemovie.*?>([\w\W]+?)</.exec(res)[1].trim()
-      item.time = parseInt(/descmovielength[\w\W]+?<span>([\w\W]+?)</.exec(res)[1].trim())
+      try {
+        res = await reqRetry(item.link.trim())
+        item.display = /txt-namemovie.*?>([\w\W]+?)</.exec(res)[1].trim()
+        item.time = parseInt(/descmovielength[\w\W]+?<span>([\w\W]+?)</.exec(res)[1].trim())
+      } catch (ex) {
+        item.display = item.name
+        item.time = 0
+      }
+
       item.cinema = { major: true }
       movies.push(JSON.parse(JSON.stringify(item)))
       break
@@ -94,8 +99,12 @@ const InitSF = async () => {
     for (let i = 0; i < 14; i++) {
       if (item.release.toISOString() !== date.add(1, 'd').toISOString()) continue
       
-      res = await reqRetry(item.link)
-      item.time = parseInt(((/class="movie-detail"[\w\W]+?class="system"[\w\W]+?<\/span><span>(.*?)นาที<\/span>/ig.exec(res) || [])[1] || '0').trim())
+      try {
+        res = await reqRetry(item.link)
+        item.time = parseInt(((/class="movie-detail"[\w\W]+?class="system"[\w\W]+?<\/span><span>(.*?)นาที<\/span>/ig.exec(res) || [])[1] || '0').trim())
+      } catch (ex) {
+        item.time = 0
+      }
       item.cinema = { sf: true }
       movies.push(JSON.parse(JSON.stringify(item)))
       break
