@@ -1,6 +1,6 @@
 {
   "name": "task-cinema-weekly",
-  "version": "1.4.3",
+  "version": "1.4.4",
   "description": "cinema dump data from website",
   "main": "index.js",
   "scripts": {
