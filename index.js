@@ -1,6 +1,6 @@
+const Sentry = require('@sentry/node')
 const debuger = require('@touno-io/debuger')
 const { task } = require('@touno-io/db/schema')
-const Sentry = require('@sentry/node')
 const moment = require('moment')
 const axios = require('axios')
 
@@ -9,9 +9,10 @@ require('axios-retry')(axios, { retryDelay: c => c * 3000 })
 const flexPoster = require('./notify/flex')
 const production = !(process.env.NODE_ENV === 'development')
 
+const { name, version } = require('./package.json')
 Sentry.init({
   dsn: process.env.SENTRY_DSN || null,
-  release: `${process.env.npm_package_name}@${process.env.npm_package_version}`
+  release: `${name}@${version}`
 })
 
 const majorWeb = `https://www.majorcineplex.com/movie`
@@ -22,7 +23,7 @@ const cleanText = (n = '') => n.toLowerCase().replace(/[-.!: /\\()_]+/ig, '')
 const checkMovieName = (a, b) => {
   return cleanText(a.name) === cleanText(b.name) || (a.display && b.display && (cleanText(a.display) === cleanText(b.display) || cleanText(a.name) === cleanText(b.display) || cleanText(b.name) === cleanText(a.display)))
 }
-// 
+
 const isDuplicateInArray = (movies, item) => {
   for (const movie of movies) {
     if (checkMovieName(movie, item)) return true
@@ -222,15 +223,15 @@ task.open().then(async () => {
   switch (process.env.EVENT_JOB) {
     case 'DOWNLOAD':
       server.log('Major and SFCinema dumper at 7:50 am. every day.')
-      downloadMovieItem()
+      await downloadMovieItem()
       break
     case 'WEEKLY_ONCE':
       server.log('Notify movies in week at 8:00 am. every monday.')
-      notifyWeeklyMovies()
+      await notifyWeeklyMovies()
       break
     case 'DAILY_ONCE': 
       server.log('Notify daily at 8:00 am. not monday.')
-      notifyDailyMovies()
+      await notifyDailyMovies()
       break
   }
   // server.log('Major and SFCinema dumper at 7:50 am. every day.')
@@ -242,4 +243,5 @@ task.open().then(async () => {
   // server.log('Notify daily at 8:00 am. not monday.')
   // cron.schedule('0 8 * * 2,3,4,5', notifyDailyMovies)
   await task.close()
-})
+  server.log('Cinema successful.')
+}).catch(ex => Sentry.captureException(ex))
