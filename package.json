@@ -4,7 +4,7 @@
   "description": "cinema dump data from website",
   "main": "index.js",
   "scripts": {
-    "dev": "env-cmd nodemon index.js",
+    "dev": "env-cmd node index.js",
     "start": "node index.js",
     "eslint": "eslint --ext .js --ignore-path .eslintignore ."
   },
@@ -19,19 +19,17 @@
   },
   "homepage": "https://github.com/dvgamerr/task-cinema-weekly#readme",
   "dependencies": {
-    "@touno-io/db": "^2.6.1",
-    "@touno-io/debuger": "^2.0.2",
-    "cron": "^1.6.0",
-    "moment": "^2.24.0",
-    "node-cron": "^2.0.3",
-    "numeral": "^2.0.6",
-    "request": "^2.87.0",
-    "request-promise": "^4.2.1"
+    "@sentry/node": "^5.22.2",
+    "@touno-io/db": "^2.7.3",
+    "@touno-io/debuger": "^2.3.3",
+    "axios": "^0.20.0",
+    "axios-retry": "^3.1.8",
+    "moment": "^2.27.0",
+    "numeral": "^2.0.6"
   },
   "devDependencies": {
-    "env-cmd": "^10.0.1",
-    "eslint": "^6.7.2",
-    "nodemon": "^2.0.2"
+    "env-cmd": "^10.1.0",
+    "eslint": "^7.7.0"
   },
   "keywords": [
     "cinema"

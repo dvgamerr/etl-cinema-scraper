@@ -66,7 +66,7 @@ module.exports = (msg, movies = []) => {
             paddingTop: '10px',
             paddingBottom: '10px',
             paddingEnd: '10px',
-            action: { type: 'uri', label: 'action', uri: e.link }
+            action: { type: 'uri', label: 'action', uri: encodeURI(`https://www.youtube.com/results?search_query=${e.display.replace(/ /ig, '+')}${!/^ho/.test(e.name) ? `+${e.name.replace(/ /ig, '+')}` : ''}+trailer`) }
           }
         ],
         paddingAll: '0px',

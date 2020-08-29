@@ -1,39 +1,28 @@
 const debuger = require('@touno-io/debuger')
 const { task } = require('@touno-io/db/schema')
-const request = require('request-promise')
+const Sentry = require('@sentry/node')
 const moment = require('moment')
-const cron = require('node-cron')
+const axios = require('axios')
+
+require('axios-retry')(axios, { retryDelay: c => c * 3000 })
 
 const flexPoster = require('./notify/flex')
-
 const production = !(process.env.NODE_ENV === 'development')
-const major = `https://www.majorcineplex.com/movie`
-const sf = `https://www.sfcinemacity.com/movies/coming-soon`
-const bot = `https://intense-citadel-55702.herokuapp.com/popcorn/${production ? 'movie' : 'kem'}`
 
-const reqRetry = async (get_url, retry = 3) => {
-  let i = 0
-  let success = false
-  let res = {}
-  do {
-    try {
-      res = await request.get(get_url)
-      success = true
-    } catch (ex) {
-      i++
-      if (i >= retry) throw ex
-    }
-  } while (i < retry && !success)
-  return res
-}
+Sentry.init({
+  dsn: process.env.SENTRY_DSN || null,
+  release: `${process.env.npm_package_name}@${process.env.npm_package_version}`
+})
 
+const majorWeb = `https://www.majorcineplex.com/movie`
+const sfWeb = `https://www.sfcinemacity.com/movies/coming-soon`
+const bot = `https://notice.touno.io/popcorn/${production ? 'movie' : 'kem'}`
 
-const cleanText = (n = '') => n.toLowerCase().replace(/[-.!: /\\_]+/ig, '')
-
+const cleanText = (n = '') => n.toLowerCase().replace(/[-.!: /\\()_]+/ig, '')
 const checkMovieName = (a, b) => {
-  return a.name === b.name || (a.display && b.display && (cleanText(a.display) == cleanText(b.display) || cleanText(a.name) == cleanText(b.display) || cleanText(b.name) == cleanText(a.display)))
+  return cleanText(a.name) === cleanText(b.name) || (a.display && b.display && (cleanText(a.display) === cleanText(b.display) || cleanText(a.name) === cleanText(b.display) || cleanText(b.name) === cleanText(a.display)))
 }
-
+// 
 const isDuplicateInArray = (movies, item) => {
   for (const movie of movies) {
     if (checkMovieName(movie, item)) return true
@@ -42,8 +31,7 @@ const isDuplicateInArray = (movies, item) => {
 }
 
 const InitMajor = async () => {
-  const logger = debuger('Major')
-  let res = await reqRetry(major)
+  let { data: res } = await axios(majorWeb)
   let movies = []
   
   for (const movie of res.match(/class="eachMovie"[\w\W]+?class="secondexplain/ig)) {
@@ -60,7 +48,7 @@ const InitMajor = async () => {
     for (let i = 0; i < 14; i++) {
       if (item.release.toISOString() !== date.add(1, 'd').toISOString()) continue
       try {
-        res = await reqRetry(item.link.trim())
+        let { data: res } = await axios(item.link.trim())
         item.display = /txt-namemovie.*?>([\w\W]+?)</.exec(res)[1].trim()
         item.time = parseInt(/descmovielength[\w\W]+?<span>([\w\W]+?)</.exec(res)[1].trim())
       } catch (ex) {
@@ -73,13 +61,11 @@ const InitMajor = async () => {
       break
     }
   }
-  logger.log(`Total ${movies.length} movies.`)
   return movies
 }
 
 const InitSF = async () => {
-  const logger = debuger('SFCinema')
-  let res = await request(sf)
+  let { data: res } = await axios(sfWeb)
   let movies = []
   for (const movie of res.match(/class="movie-card[\w\W]+?class="name/ig)) {
     let item = /movie\/(?<link>.*?)"[\w\W]+?title="(?<name>.*?)"[\w\W]+?\((?<img>.*?)\)[\w\W]+?"date">(?<release>.*?)</ig.exec(movie)
@@ -87,9 +73,8 @@ const InitSF = async () => {
 
     item = item.groups
     item.display = item.name.trim()
-    item.name = cleanText(item.link.trim())
     item.img = item.img.replace(/=w\d+$/,'')
-    item.link = `https://www.sfcinemacity.com/movie/${item.name}`
+    item.link = `https://www.sfcinemacity.com/movie/${item.link}`
     if (isDuplicateInArray(movies, item)) continue
     
     let date = moment().startOf('week').add(-1, 'd')
@@ -100,8 +85,9 @@ const InitSF = async () => {
       if (item.release.toISOString() !== date.add(1, 'd').toISOString()) continue
       
       try {
-        res = await reqRetry(item.link)
+        let { data: res } = await axios(item.link)
         item.time = parseInt(((/class="movie-detail"[\w\W]+?class="system"[\w\W]+?<\/span><span>(.*?)นาที<\/span>/ig.exec(res) || [])[1] || '0').trim())
+        item.name = (/class="movie-main-detail"[\w\W]+?class="title">([\w\W]+?)<\/h1>/ig.exec(res) || [])[1] || ''
       } catch (ex) {
         item.time = 0
       }
@@ -110,7 +96,6 @@ const InitSF = async () => {
       break
     }
   }
-  logger.log(`Total ${movies.length} movies.`)
   return movies
 }
 
@@ -118,15 +103,23 @@ const server = debuger('Cinema')
 const downloadMovieItem = async () => {
   try {
     server.start('Collection Search...')
+    const { Cinema } = await task.get()
     const [ major, sf ] = await Promise.all([ InitMajor(), InitSF() ])
+    const findItem = await Cinema.find({ weekly: { $gte: moment().week() }, year: moment().year() })
     server.info(`Major: ${major.length} and SF: ${sf.length}`)
 
     let movies = []
-    for (const item1 of major.concat(sf)) {
+    for (const item1 of major.concat(sf).concat(findItem)) {
       let duplicateMovie = false
       for (const item2 of movies) {
         if (checkMovieName(item1, item2)) {
           duplicateMovie = true
+          item2.img = item1.img
+          if (item1._id) {
+            item2._id = item1._id
+            item2.weekly = item1.weekly
+            item2.year = item1.year
+          }
           item2.cinema = Object.assign(item1.cinema, item2.cinema)
           break
         }
@@ -135,7 +128,6 @@ const downloadMovieItem = async () => {
     }
     
     movies = movies.sort((a, b) => a.release > b.release ? 1 : -1)
-    const { Cinema } = await task.get()
     let newMovies = []
     let currentWeekly = moment().week()
     
@@ -147,8 +139,7 @@ const downloadMovieItem = async () => {
           if (year < moment(item.release).year()) year = moment(item.release).year()
         }
       }
-      let findItem = await Cinema.findOne({ $or: [ { name: item.name }, { display: item.display } ] })
-      if (!findItem) {
+      if (!item._id) {
         let isMatch = false
         for (const movie of (await Cinema.find({ release: item.release }))) {
           if (checkMovieName(movie, item)) {
@@ -158,12 +149,13 @@ const downloadMovieItem = async () => {
         }
         if (!isMatch) {
           let newItem = Object.assign(item, { weekly, year })
-          if (!production) console.log(newItem)
-          await new Cinema(Object.assign(item, { weekly, year })).save()
-          if (currentWeekly === weekly) newMovies.push(item)
+          await new Cinema(newItem).save()
+          if (currentWeekly === weekly) newMovies.push(newItem)
         }
       } else {
-        await Cinema.updateOne({ _id: findItem._id }, { $set: item })
+        const cinemaId = item._id
+        delete item._id
+        await Cinema.updateOne({ _id: cinemaId}, { $set: item })
       }
     }
     if (newMovies.length > 0) {
@@ -177,7 +169,9 @@ const downloadMovieItem = async () => {
 }
 
 const sendPoster = async (msg, items) => {
-  if (production) await request({ url: bot, method: 'PUT', json: true, body: flexPoster(msg, items)  })
+  if (production) {
+    await axios({ url: bot, method: 'PUT', data: flexPoster(msg, items) })
+  }
 }
 
 const notifyDailyMovies = async () => {
@@ -187,7 +181,7 @@ const notifyDailyMovies = async () => {
   if (movies.length === 0) return
 
   movies = movies.map((e, i) => `${i + 1}. ${e.display} (${e.time} นาที)`)
-  await request({ url: bot, method: 'PUT', json: true, body: { type: 'text', text: `*ภาพยนตร์ที่เข้าฉายวันนี้*\n${movies.join('\n')}` }  })
+  await axios({ url: bot, method: 'PUT', json: true, data: { type: 'text', text: `*ภาพยนตร์ที่เข้าฉายวันนี้*\n${movies.join('\n')}` }  })
 }
 
 const notifyWeeklyMovies = async () => {
@@ -225,12 +219,27 @@ task.open().then(async () => {
     // await notifyDailyMovies()
   }
 
-  server.log('Major and SFCinema dumper at 7:50 am. every day.')
-  cron.schedule('50 7 * * *', downloadMovieItem)
+  switch (process.env.EVENT_JOB) {
+    case 'DOWNLOAD':
+      server.log('Major and SFCinema dumper at 7:50 am. every day.')
+      downloadMovieItem()
+      break
+    case 'WEEKLY_ONCE':
+      server.log('Notify movies in week at 8:00 am. every monday.')
+      notifyWeeklyMovies()
+      break
+    case 'DAILY_ONCE': 
+      server.log('Notify daily at 8:00 am. not monday.')
+      notifyDailyMovies()
+      break
+  }
+  // server.log('Major and SFCinema dumper at 7:50 am. every day.')
+  // cron.schedule('50 7 * * *', downloadMovieItem)
 
-  server.log('Notify movies in week at 8:00 am. every monday.')
-  cron.schedule('0 8 * * 1', notifyWeeklyMovies)
+  // server.log('Notify movies in week at 8:00 am. every monday.')
+  // cron.schedule('0 8 * * 1', notifyWeeklyMovies)
 
-  server.log('Notify daily at 8:00 am. not monday.')
-  cron.schedule('0 8 * * 2,3,4,5', notifyDailyMovies)
+  // server.log('Notify daily at 8:00 am. not monday.')
+  // cron.schedule('0 8 * * 2,3,4,5', notifyDailyMovies)
+  await task.close()
 })
