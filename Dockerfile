@@ -1,14 +1,11 @@
-FROM node:12.13.1-alpine
+FROM node:lts-alpine
 LABEL maintainer="Mr.Kananek T. <info@touno.io>"
 
+ENV NODE_ENV production
+
 WORKDIR /app
+COPY . /app
 
-COPY package.json ./
-
-RUN npm i --only=production
-
-COPY node_modules ./node_modules
-COPY notify ./notify
-COPY *.js ./
+RUN npm i
 
 CMD ["node", "index.js"]
