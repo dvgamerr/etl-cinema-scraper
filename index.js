@@ -170,9 +170,7 @@ const downloadMovieItem = async () => {
 }
 
 const sendPoster = async (msg, items) => {
-  if (production) {
-    await axios({ url: bot, method: 'PUT', data: flexPoster(msg, items) })
-  }
+  await axios({ url: bot, method: 'PUT', data: flexPoster(msg, items) })
 }
 
 const notifyDailyMovies = async () => {
@@ -212,12 +210,12 @@ const notifyWeeklyMovies = async () => {
     server.error(ex)
   }
 }
-
 task.open().then(async () => {
+  server.start('Cinema.')
   if (!production) {
-    await downloadMovieItem()
-    await notifyWeeklyMovies()
-    // await notifyDailyMovies()
+    // await downloadMovieItem()
+    // await notifyWeeklyMovies()
+    await notifyDailyMovies()
   }
 
   switch (process.env.EVENT_JOB) {
@@ -243,5 +241,5 @@ task.open().then(async () => {
   // server.log('Notify daily at 8:00 am. not monday.')
   // cron.schedule('0 8 * * 2,3,4,5', notifyDailyMovies)
   await task.close()
-  server.log('Cinema successful.')
+  server.success('Cinema.')
 }).catch(ex => Sentry.captureException(ex))
