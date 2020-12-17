@@ -1,5 +1,5 @@
 {
-  "name": "task-cinema-weekly",
+  "name": "task-cinema",
   "version": "1.5.2",
   "description": "cinema dump data from website",
   "main": "index.js",
@@ -10,14 +10,14 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/dvgamerr/task-cinema-weekly.git"
+    "url": "git+https://github.com/dvgamerr/task-cinema.git"
   },
   "author": "Kananek Thongkam",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/dvgamerr/task-cinema-weekly/issues"
+    "url": "https://github.com/dvgamerr/task-cinema/issues"
   },
-  "homepage": "https://github.com/dvgamerr/task-cinema-weekly#readme",
+  "homepage": "https://github.com/dvgamerr/task-cinema#readme",
   "dependencies": {
     "@sentry/node": "^5.27.2",
     "@touno-io/db": "^2.8.0",
