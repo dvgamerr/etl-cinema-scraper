@@ -17,7 +17,7 @@ Sentry.init({
 
 const majorWeb = `https://www.majorcineplex.com/movie`
 const sfWeb = `https://www.sfcinemacity.com/movies/coming-soon`
-const bot = `https://notice.touno.io/popcorn/${production ? 'movie' : 'kem'}`
+const bot = `https://notice.touno.io/popcorn/${!production ? 'movie' : 'kem'}`
 
 const cleanText = (n = '') => n.toLowerCase().replace(/[-.!: /\\()_]+/ig, '')
 const checkMovieName = (a, b) => {
@@ -36,7 +36,7 @@ const InitMajor = async () => {
   let movies = []
   res = res.match(/class="box-movies-list"[\w\W]+?id="movie-page-coming"/ig)[0]
   for (const movie of res.match(/class="ml-box"[\w\W]+?<\/a><\/div>/ig)) {
-    let item = /src="(?<img>.*?)"[\W\w]+"mlbc-name">(?<name>[\W\w]+)<\/div>[\W\w]+"mlbc-time">.*>(?<time>[\W\w]+?)<\/div>[\W\w]+?href="(?<link>.*?)"[\W\w]+"mlb-date">(?<release>[\W\w]+?)</i.exec(movie)
+    let item = /src="(?<img>.*?)"[\W\w]+"mlbc-name">(?<name>[\W\w]+?)<\/div>[\W\w]+"mlbc-time">.*>(?<time>[\W\w]+?)<\/div>[\W\w]+?href="(?<link>.*?)"[\W\w]+"mlb-date">(?<release>[\W\w]+?)</i.exec(movie)
     if (!item) continue
     item = item.groups
     item.display = item.name.trim()
@@ -127,14 +127,15 @@ const downloadMovieItem = async () => {
     movies = movies.sort((a, b) => a.release > b.release ? 1 : -1)
     let newMovies = []
     let currentWeekly = moment().week()
-    
+
+    let plusYear = movies.map(e => moment(e.release).week())
+    plusYear = Array.from(new Set(plusYear)).includes(1) && Array.from(new Set(plusYear)).includes(52)
+
     for (const item of movies) {
       let weekly = moment(item.release).week()
       let year = moment(item.release).year()
-      if (weekly === 1) {
-        for (const item of movies) {
-          if (year < moment(item.release).year()) year = moment(item.release).year()
-        }
+      if (weekly === 1 && plusYear) {
+        year++
       }
       if (!item._id) {
         let isMatch = false
