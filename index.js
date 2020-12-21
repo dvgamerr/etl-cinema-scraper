@@ -34,28 +34,24 @@ const isDuplicateInArray = (movies, item) => {
 const InitMajor = async () => {
   let { data: res } = await axios(majorWeb)
   let movies = []
-  
-  for (const movie of res.match(/class="eachMovie"[\w\W]+?class="secondexplain/ig)) {
-    let item = /href="(?<link>.*?)"[\w\W]*"?img.*?src="(?<img>.*?)"[\w\W]*?วันที่เข้าฉาย:(?<release>[\w\W]+?)</ig.exec(movie)
+  res = res.match(/class="box-movies-list"[\w\W]+?id="movie-page-coming"/ig)[0]
+  for (const movie of res.match(/class="ml-box"[\w\W]+?<\/a><\/div>/ig)) {
+    let item = /src="(?<img>.*?)"[\W\w]+"mlbc-name">(?<name>[\W\w]+)<\/div>[\W\w]+"mlbc-time">.*>(?<time>[\W\w]+?)<\/div>[\W\w]+?href="(?<link>.*?)"[\W\w]+"mlb-date">(?<release>[\W\w]+?)</i.exec(movie)
     if (!item) continue
     item = item.groups
-    item.name = cleanText(item.link.trim().replace('https://www.majorcineplex.com/movie/', ''))
+    item.display = item.name.trim()
+    item.name = cleanText(item.link.trim().replace('/movie/', ''))
+    item.link = `https://www.majorcineplex.com${item.link.trim()}`
+    const time = /(?<h>\d\d).ชม..(?<m>\d\d).นาที/ig.exec(item.time.trim())
+    item.time = (parseInt(time.groups.h) * 60) + parseInt(time.groups.m)
     if (isDuplicateInArray(movies, item)) continue
 
     let date = moment().startOf('week').add(-1, 'd')
-    item.release = moment(item.release.trim(), 'DD/MM/YY')
+    item.release = moment(item.release.trim(), 'DD MMM YYYY')
     if (!item.release.isValid()) continue
 
     for (let i = 0; i < 14; i++) {
       if (item.release.toISOString() !== date.add(1, 'd').toISOString()) continue
-      try {
-        let { data: res } = await axios(item.link.trim())
-        item.display = /txt-namemovie.*?>([\w\W]+?)</.exec(res)[1].trim()
-        item.time = parseInt(/descmovielength[\w\W]+?<span>([\w\W]+?)</.exec(res)[1].trim())
-      } catch (ex) {
-        item.display = item.name
-        item.time = 0
-      }
 
       item.cinema = { major: true }
       movies.push(JSON.parse(JSON.stringify(item)))
@@ -151,11 +147,13 @@ const downloadMovieItem = async () => {
         if (!isMatch) {
           let newItem = Object.assign(item, { weekly, year })
           await new Cinema(newItem).save()
+        // console.log('insert', newItem)
           if (currentWeekly === weekly) newMovies.push(newItem)
         }
       } else {
         const cinemaId = item._id
         delete item._id
+        // console.log('update', cinemaId, item)
         await Cinema.updateOne({ _id: cinemaId}, { $set: item })
       }
     }
@@ -213,9 +211,9 @@ const notifyWeeklyMovies = async () => {
 task.open().then(async () => {
   server.start('Cinema.')
   if (!production) {
-    // await downloadMovieItem()
+    await downloadMovieItem()
     // await notifyWeeklyMovies()
-    await notifyDailyMovies()
+    // await notifyDailyMovies()
   }
 
   switch (process.env.EVENT_JOB) {
