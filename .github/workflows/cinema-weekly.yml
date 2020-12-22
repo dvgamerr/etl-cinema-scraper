@@ -2,14 +2,14 @@ name: cinema-weekly
 
 on:
   schedule:
-  - cron: 0 1 * * 2-5
+  - cron: 0 1 * * 1
 
 env:
   IMAGE_NAME: task-cinema
 
 jobs:
   trigger:
-    if: github.event_name == 'schedule'
+    if: github.event_name == 'schedule' && false
     runs-on: ubuntu-18.04
     steps:
       - uses: actions/checkout@v2

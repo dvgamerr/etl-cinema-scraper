@@ -2,14 +2,14 @@ name: cinema-dl
 
 on:
   schedule:
-  - cron: 30 23 * * *
+  - cron: 30 0 * * *
 
 env:
   IMAGE_NAME: task-cinema
 
 jobs:
   trigger:
-    if: github.event_name == 'schedule'
+    if: github.event_name == 'schedule' && false
     runs-on: ubuntu-18.04
     steps:
       - uses: actions/checkout@v2

@@ -9,7 +9,7 @@ env:
 
 jobs:
   trigger:
-    if: github.event_name == 'schedule'
+    if: github.event_name == 'schedule' && false
     runs-on: ubuntu-18.04
     steps:
       - uses: actions/checkout@v2

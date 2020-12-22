@@ -1,0 +1,47 @@
+[
+  {
+    "name": "cinema-dl",
+    "script": "index.js",
+    "instances": 1,
+    "exec_mode": "fork",
+    "cron_restart": "30 7 * * *",
+    "watch": false,
+    "autorestart": false,
+    "env": {
+      "TZ": "Asia/Bangkok",
+      "NODE_ENV": "production",
+      "MONGODB_URI": "mongodb://touno-io:ZbaHa!zh7gGTA!8Ke@mongo:27017/?authSource=admin",
+      "EVENT_JOB": "DOWNLOAD"
+    }
+  },
+  {
+    "name": "cinema-weekly",
+    "script": "index.js",
+    "instances": 1,
+    "exec_mode": "fork",
+    "cron_restart": "0 8 * * 1",
+    "watch": false,
+    "autorestart": false,
+    "env": {
+      "TZ": "Asia/Bangkok",
+      "NODE_ENV": "production",
+      "MONGODB_URI": "mongodb://touno-io:ZbaHa!zh7gGTA!8Ke@mongo:27017/?authSource=admin",
+      "EVENT_JOB": "WEEKLY_ONCE"
+    }
+  },
+  {
+    "name": "cinema-daily",
+    "script": "index.js",
+    "instances": 1,
+    "exec_mode": "fork",
+    "cron_restart": "0 8 * * 2-5",
+    "watch": false,
+    "autorestart": false,
+    "env": {
+      "TZ": "Asia/Bangkok",
+      "NODE_ENV": "production",
+      "MONGODB_URI": "mongodb://touno-io:ZbaHa!zh7gGTA!8Ke@mongo:27017/?authSource=admin",
+      "EVENT_JOB": "DAILY_ONCE"
+    }
+  }
+]
