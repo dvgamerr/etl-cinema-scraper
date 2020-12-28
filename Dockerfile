@@ -9,7 +9,7 @@
 # RUN npm i
 
 # CMD ["node", "index.js"]
-FROM keymetrics/pm2:latest-alpine
+FROM keymetrics/pm2:12-alpine
 
 ENV NODE_ENV production
 
