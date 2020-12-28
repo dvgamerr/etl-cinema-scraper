@@ -159,8 +159,8 @@ const downloadMovieItem = async () => {
       }
     }
     if (newMovies.length > 0) {
-      server.info(`New cinema add ${newMovies.length} movies.`)
-      if (moment().day != 1) await sendPoster(`ป๊อปคอนมีหนังสัปดาห์นี้ มาเพิ่ม ${newMovies.length} เรื่องครับผม`, newMovies)
+      server.info(`New cinema add ${newMovies.length} movies (${moment().day}).`)
+      if (moment().day < 1) await sendPoster(`ป๊อปคอนมีหนังสัปดาห์นี้ มาเพิ่ม ${newMovies.length} เรื่องครับผม`, newMovies)
     }
     server.success('Save Downloaded.')
   } catch (ex) {
@@ -212,8 +212,8 @@ const notifyWeeklyMovies = async () => {
 task.open().then(async () => {
   server.start('Cinema.')
   if (!production) {
-    await downloadMovieItem()
-    // await notifyWeeklyMovies()
+    // await downloadMovieItem()
+    await notifyWeeklyMovies()
     // await notifyDailyMovies()
   }
 
