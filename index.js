@@ -17,7 +17,7 @@ Sentry.init({
 
 const majorWeb = `https://www.majorcineplex.com/movie`
 const sfWeb = `https://www.sfcinemacity.com/movies/coming-soon`
-const bot = `${production ? 'http://notice/popcorn/movie' : 'https://notice.touno.io/popcorn/kem'}`
+const bot = process.env.NOTIFY || `https://notice.touno.io/popcorn/kem`
 
 const cleanText = (n = '') => n.toLowerCase().replace(/[-.!: /\\()_]+/ig, '')
 const checkMovieName = (a, b) => {
@@ -128,15 +128,13 @@ const downloadMovieItem = async () => {
     let newMovies = []
     let currentWeekly = moment().week()
 
-    let plusYear = movies.map(e => moment(e.release).week())
-    plusYear = Array.from(new Set(plusYear)).includes(1) && Array.from(new Set(plusYear)).includes(52)
+    let checkYear = movies.map(e => moment(e.release).week())
+    checkYear = Array.from(new Set(checkYear)).includes(1) && Array.from(new Set(checkYear)).includes(52)
 
     for (const item of movies) {
       let weekly = moment(item.release).week()
       let year = moment(item.release).year()
-      if (weekly === 1 && plusYear) {
-        year++
-      }
+      if (weekly === 1 && checkYear) weekly = 52
       if (!item._id) {
         let isMatch = false
         for (const movie of (await Cinema.find({ release: item.release }))) {
@@ -148,19 +146,17 @@ const downloadMovieItem = async () => {
         if (!isMatch) {
           let newItem = Object.assign(item, { weekly, year })
           await new Cinema(newItem).save()
-        // console.log('insert', newItem)
           if (currentWeekly === weekly) newMovies.push(newItem)
         }
       } else {
         const cinemaId = item._id
         delete item._id
-        // console.log('update', cinemaId, item)
         await Cinema.updateOne({ _id: cinemaId}, { $set: item })
       }
     }
     if (newMovies.length > 0) {
       server.info(`New cinema add ${newMovies.length} movies (${moment().day}).`)
-      if (moment().day < 1) await sendPoster(`ป๊อปคอนมีหนังสัปดาห์นี้ มาเพิ่ม ${newMovies.length} เรื่องครับผม`, newMovies)
+      if (moment().day == 1) await sendPoster(`ป๊อปคอนมีหนังสัปดาห์นี้ มาเพิ่ม ${newMovies.length} เรื่องครับผม`, newMovies)
     }
     server.success('Save Downloaded.')
   } catch (ex) {
@@ -212,7 +208,7 @@ const notifyWeeklyMovies = async () => {
 task.open().then(async () => {
   server.start('Cinema.')
   if (!production) {
-    // await downloadMovieItem()
+    await downloadMovieItem()
     await notifyWeeklyMovies()
     // await notifyDailyMovies()
   }
