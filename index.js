@@ -134,7 +134,7 @@ const downloadMovieItem = async () => {
     for (const item of movies) {
       let weekly = moment(item.release).week()
       let year = moment(item.release).year()
-      if (weekly === 1 && checkYear) weekly = 52
+      if (weekly === 1 && checkYear) year++
       if (!item._id) {
         let isMatch = false
         for (const movie of (await Cinema.find({ release: item.release }))) {
@@ -181,8 +181,10 @@ const notifyDailyMovies = async () => {
 const notifyWeeklyMovies = async () => {
   try {
     const { Cinema } = await task.get()
-    let weekly = moment().week()
-    let movies = await Cinema.find({ weekly, year: moment().year() }, null, { $sort: { release: 1 } })
+    let weekly = moment().endOf('w').week()
+    let year = moment().endOf('w').year()
+    let movies = await Cinema.find({ weekly, year }, null, { $sort: { release: 1 } })
+    
     server.info(`Weekly new ${movies.length} movie`)
     if (movies.length === 0) return
 
@@ -208,8 +210,8 @@ const notifyWeeklyMovies = async () => {
 task.open().then(async () => {
   server.start('Cinema.')
   if (!production) {
-    await downloadMovieItem()
-    await notifyWeeklyMovies()
+    // await downloadMovieItem()
+    // await notifyWeeklyMovies()
     // await notifyDailyMovies()
   }
 
@@ -237,4 +239,5 @@ task.open().then(async () => {
   // cron.schedule('0 8 * * 2,3,4,5', notifyDailyMovies)
   await task.close()
   server.success('Cinema.')
+  process.exit(0)
 }).catch(ex => Sentry.captureException(ex))
