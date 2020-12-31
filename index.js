@@ -196,12 +196,12 @@ const notifyWeeklyMovies = async () => {
     for (const item of movies) {
       showen.push(item)
       if (showen.length === 10) {
-        await sendPoster(`ป๊อปคอนขอเสนอ โปรแกรมหนังประจำสัปดาห์ที่ ${weekly}${groups > 1 ? ` [${i}/${groups}]` : ''} ครับผม`, showen)
+        await sendPoster(`ป๊อปคอนขอเสนอ โปรแกรมหนังประจำสัปดาห์ที่ ${weekly} ปี ${year}${groups > 1 ? ` [${i}/${groups}]` : ''} ครับผม`, showen)
         showen = []
         i++
       }
     }
-    if (showen.length > 0) await sendPoster(`ป๊อปคอนขอเสนอ โปรแกรมหนังประจำสัปดาห์ที่ ${weekly}${groups > 1 ? ` [${i}/${groups}]` : ''} ครับผม`, showen)
+    if (showen.length > 0) await sendPoster(`ป๊อปคอนขอเสนอ โปรแกรมหนังประจำสัปดาห์ที่ ${weekly} ปี ${year}${groups > 1 ? ` [${i}/${groups}]` : ''} ครับผม`, showen)
 
   } catch (ex) {
     server.error(ex)
@@ -239,5 +239,4 @@ task.open().then(async () => {
   // cron.schedule('0 8 * * 2,3,4,5', notifyDailyMovies)
   await task.close()
   server.success('Cinema.')
-  process.exit(0)
 }).catch(ex => Sentry.captureException(ex))
