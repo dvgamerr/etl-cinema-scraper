@@ -155,7 +155,7 @@ const downloadMovieItem = async () => {
       }
     }
     if (newMovies.length > 0) {
-      server.info(`New cinema add ${newMovies.length} movies (${moment().day}).`)
+      server.info(`New cinema add ${newMovies.length} movies (${moment().day()}).`)
       if (moment().day == 1) await sendPoster(`ป๊อปคอนมีหนังสัปดาห์นี้ มาเพิ่ม ${newMovies.length} เรื่องครับผม`, newMovies)
     }
     server.success('Save Downloaded.')
