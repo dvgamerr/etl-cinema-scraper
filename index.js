@@ -20,7 +20,7 @@ Sentry.init({
 })
 
 const transaction = Sentry.startTransaction({
-  op: process.env.EVENT_JOB,
+  op: process.env.EVENT_NAME,
   name: "task-notify",
 })
 
@@ -226,16 +226,16 @@ task.open().then(async () => {
     // await notifyDailyMovies()
   }
 
-  switch (process.env.EVENT_JOB) {
-    case 'DOWNLOAD':
+  switch (process.env.EVENT_NAME) {
+    case 'download':
       server.log('Major and SFCinema dumper at 7:50 am. every day.')
       await downloadMovieItem()
       break
-    case 'WEEKLY_ONCE':
+    case 'weekly':
       server.log('Notify movies in week at 8:00 am. every monday.')
       await notifyWeeklyMovies()
       break
-    case 'DAILY_ONCE': 
+    case 'daily': 
       server.log('Notify daily at 8:00 am. not monday.')
       await notifyDailyMovies()
       break
