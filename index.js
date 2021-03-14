@@ -1,11 +1,8 @@
 const Sentry = require('@sentry/node')
 const debuger = require('@touno-io/debuger')
 const { task } = require('@touno-io/db/schema')
-const dayjs = require('dayjs')
+const moment = require('moment')
 const axios = require('axios')
-
-const isoWeek = require('dayjs/plugin/isoWeek')
-dayjs.extend(isoWeek)
 
 require('axios-retry')(axios, { retryDelay: c => c * 3000 })
 
@@ -55,9 +52,9 @@ const InitMajor = async () => {
     const time = /(?<h>\d\d).ชม..(?<m>\d\d).นาที/ig.exec(item.time.trim())
     item.time = (parseInt(time.groups.h) * 60) + parseInt(time.groups.m)
     if (isDuplicateInArray(movies, item)) continue
-
-    let date = dayjs().startOf('week').add(-1, 'd')
-    item.release = dayjs(item.release.trim(), 'DD MMM YYYY')
+    
+    let date = moment().startOf('week').add(-1, 'd')
+    item.release = moment(item.release.trim(), 'DD MMM YYYY')
     if (!item.release.isValid()) continue
 
     for (let i = 0; i < 14; i++) {
@@ -84,8 +81,8 @@ const InitSF = async () => {
     item.link = `https://www.sfcinemacity.com/movie/${item.link}`
     if (isDuplicateInArray(movies, item)) continue
     
-    let date = dayjs().startOf('week').add(-1, 'd')
-    item.release = dayjs(item.release.trim(), 'YYYY-MM-DD')
+    let date = moment().startOf('week').add(-1, 'd')
+    item.release = moment(item.release.trim(), 'YYYY-MM-DD')
     if (!item.release.isValid()) continue
 
     for (let i = 0; i < 14; i++) {
@@ -110,10 +107,10 @@ const server = debuger('Cinema')
 const downloadMovieItem = async () => {
   try {
     server.start('Collection Search...')
-    server.info(`${dayjs().isoWeekday()} day of week.`)
+    server.info(`${moment().week()} day of week.`)
     const { Cinema } = await task.get()
     const [ major, sf ] = await Promise.all([ InitMajor(), InitSF() ])
-    const findItem = await Cinema.find({ weekly: { $gte: dayjs().isoWeekday() }, year: dayjs().year() })
+    const findItem = await Cinema.find({ weekly: { $gte: moment().week() }, year: moment().year() })
     server.info(`Major: ${major.length} and SF: ${sf.length}`)
 
     let movies = []
@@ -137,14 +134,14 @@ const downloadMovieItem = async () => {
     
     movies = movies.sort((a, b) => a.release > b.release ? 1 : -1)
     let newMovies = []
-    let currentWeekly = dayjs().isoWeekday()
+    let currentWeekly = moment().week()
 
-    let checkYear = movies.map(e => dayjs(e.release).isoWeekday())
+    let checkYear = movies.map(e => moment(e.release).week())
     checkYear = Array.from(new Set(checkYear)).includes(1) && Array.from(new Set(checkYear)).includes(52)
 
     for (const item of movies) {
-      let weekly = dayjs(item.release).isoWeekday()
-      let year = dayjs(item.release).year()
+      let weekly = moment(item.release).week()
+      let year = moment(item.release).year()
       if (weekly === 1 && checkYear) year++
       if (!item._id) {
         let isMatch = false
@@ -166,8 +163,8 @@ const downloadMovieItem = async () => {
       }
     }
     if (newMovies.length > 0) {
-      server.info(`New cinema add ${newMovies.length} movies (${dayjs().day()}).`)
-      if (dayjs().day == 1) await sendPoster(`ป๊อปคอนมีหนังสัปดาห์นี้ มาเพิ่ม ${newMovies.length} เรื่องครับผม`, newMovies)
+      server.info(`New cinema add ${newMovies.length} movies (${moment().day()}).`)
+      if (moment().day == 1) await sendPoster(`ป๊อปคอนมีหนังสัปดาห์นี้ มาเพิ่ม ${newMovies.length} เรื่องครับผม`, newMovies)
     }
     server.success('Save Downloaded.')
   } catch (ex) {
@@ -181,7 +178,7 @@ const sendPoster = async (msg, items) => {
 
 const notifyDailyMovies = async () => {
   const { Cinema } = await task.get()
-  let movies = await Cinema.find({ release: dayjs().startOf('day').toDate() })
+  let movies = await Cinema.find({ release: moment().startOf('day').toDate() })
   server.info(`Today has ${movies.length} movie`)
   if (movies.length === 0) return
 
@@ -192,8 +189,8 @@ const notifyDailyMovies = async () => {
 const notifyWeeklyMovies = async () => {
   try {
     const { Cinema } = await task.get()
-    let weekly = dayjs().endOf('w').isoWeekday()
-    let year = dayjs().endOf('w').year()
+    let weekly = moment().endOf('w').week()
+    let year = moment().endOf('w').year()
     let movies = await Cinema.find({ weekly, year }, null, { $sort: { release: 1 } })
     
     server.info(`Weekly new ${movies.length} movie`)
@@ -221,7 +218,7 @@ const notifyWeeklyMovies = async () => {
 server.start('Cinema sucker.')
 task.open().then(async () => {
   if (!production) {
-    // await downloadMovieItem()
+    await downloadMovieItem()
     // await notifyWeeklyMovies()
     // await notifyDailyMovies()
   }
