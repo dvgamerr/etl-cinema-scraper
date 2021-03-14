@@ -1,4 +1,4 @@
-const moment = require('moment')
+const dayjs = require('dayjs')
 
 module.exports = (msg, movies = []) => {
   let flex = movies.map(e => {
@@ -55,7 +55,7 @@ module.exports = (msg, movies = []) => {
             layout: 'vertical',
             contents: [
               { type: 'text', text: e.display, color: '#ffffff', size: 'sm', weight: 'bold' },
-              { type: 'text', text: `${moment(e.release).locale('th-TH').format('DD MMMM YYYY')}`, color: '#ffffffcc', size: 'xxs' },
+              { type: 'text', text: `${dayjs(e.release).locale('th-TH').format('DD MMMM YYYY')}`, color: '#ffffffcc', size: 'xxs' },
               { type: 'text', text: `${e.time} นาที`, color: '#ffffff', size: 'xxs', weight: 'regular', position: 'absolute', offsetTop: '29px', offsetEnd: '10px' }
             ],
             position: 'absolute',
