@@ -21,10 +21,9 @@ const transaction = Sentry.startTransaction({
   name: "task-notify",
 })
 
-
 const majorWeb = `https://www.majorcineplex.com/movie`
 const sfWeb = `https://www.sfcinemacity.com/movies/coming-soon`
-const bot = `${process.env.NOTIFY}popcorn/${production ? 'movie' : 'kem'}`
+const roomUrl = `${process.env.NOTIFY}popcorn/${production ? 'movie' : 'kem'}`
 
 const cleanText = (n = '') => n.toLowerCase().replace(/[-.!: /\\()_]+/ig, '')
 const checkMovieName = (a, b) => {
@@ -173,7 +172,7 @@ const downloadMovieItem = async () => {
 }
 
 const sendPoster = async (msg, items) => {
-  await axios({ url: bot, method: 'PUT', data: flexPoster(msg, items) })
+  await axios({ url: roomUrl, method: 'PUT', data: flexPoster(msg, items) })
 }
 
 const notifyDailyMovies = async () => {
@@ -183,7 +182,7 @@ const notifyDailyMovies = async () => {
   if (movies.length === 0) return
 
   movies = movies.map((e, i) => `${i + 1}. ${e.display} (${e.time} นาที)`)
-  await axios({ url: bot, method: 'PUT', json: true, data: { type: 'text', text: `*ภาพยนตร์ที่เข้าฉายวันนี้*\n${movies.join('\n')}` }  })
+  await axios({ url: roomUrl, method: 'PUT', json: true, data: { type: 'text', text: `*ภาพยนตร์ที่เข้าฉายวันนี้*\n${movies.join('\n')}` }  })
 }
 
 const notifyWeeklyMovies = async () => {
