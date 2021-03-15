@@ -24,7 +24,7 @@ const transaction = Sentry.startTransaction({
 
 const majorWeb = `https://www.majorcineplex.com/movie`
 const sfWeb = `https://www.sfcinemacity.com/movies/coming-soon`
-const bot = `${process.env.NOTIFY}/popcorn/${production ? 'movie' : 'kem'}`
+const bot = `${process.env.NOTIFY}popcorn/${production ? 'movie' : 'kem'}`
 
 const cleanText = (n = '') => n.toLowerCase().replace(/[-.!: /\\()_]+/ig, '')
 const checkMovieName = (a, b) => {
