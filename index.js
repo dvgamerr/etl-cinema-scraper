@@ -3,6 +3,7 @@ const debuger = require('@touno-io/debuger')
 const { task } = require('@touno-io/db/schema')
 const moment = require('moment')
 const axios = require('axios')
+const { parentPort, workerData } = require('worker_threads')
 
 require('axios-retry')(axios, { retryDelay: c => c * 3000 })
 
@@ -214,41 +215,49 @@ const notifyWeeklyMovies = async () => {
     server.error(ex)
   }
 }
-server.start('Cinema sucker.')
-task.open().then(async () => {
-  if (!production) {
-    await downloadMovieItem()
-    // await notifyWeeklyMovies()
-    // await notifyDailyMovies()
-  }
 
-  switch (process.env.EVENT_NAME) {
-    case 'download':
-      server.log('Major and SFCinema dumper at 7:50 am. every day.')
-      await downloadMovieItem()
-      break
-    case 'weekly':
-      server.log('Notify movies in week at 8:00 am. every monday.')
-      await notifyWeeklyMovies()
-      break
-    case 'daily': 
-      server.log('Notify daily at 8:00 am. not monday.')
-      await notifyDailyMovies()
-      break
-  }
-  // server.log('Major and SFCinema dumper at 7:50 am. every day.')
-  // cron.schedule('50 7 * * *', downloadMovieItem)
+if (workerData) {
+  parentPort.postMessage({
+    start: true,
+    message: `start ${moment().format('hh:mm A')}.`
+  })
 
-  // server.log('Notify movies in week at 8:00 am. every monday.')
-  // cron.schedule('0 8 * * 1', notifyWeeklyMovies)
+  task.open().then(async () => {
+    switch (workerData.eventName) {
+      case 'download':
+        server.log('Major and SFCinema dumper at 7:50 am. every day.')
+        await downloadMovieItem()
+        break
+      case 'weekly':
+        server.log('Notify movies in week at 8:00 am. every monday.')
+        await notifyWeeklyMovies()
+        break
+      case 'daily': 
+        server.log('Notify daily at 8:00 am. not monday.')
+        await notifyDailyMovies()
+        break
+    }
+    // server.log('Major and SFCinema dumper at 7:50 am. every day.')
+    // cron.schedule('50 7 * * *', downloadMovieItem)
+  
+    // server.log('Notify movies in week at 8:00 am. every monday.')
+    // cron.schedule('0 8 * * 1', notifyWeeklyMovies)
+  
+    // server.log('Notify daily at 8:00 am. not monday.')
+    // cron.schedule('0 8 * * 2,3,4,5', notifyDailyMovies)
+  }).catch(ex => {
+    server.error(ex)
+    Sentry.captureException(ex)
+  }).finally(async ()  => {
+    await task.close()
+    transaction.finish()
+    parentPort.postMessage({ stop: true })
+  })
+} else {
+  // await downloadMovieItem()
+  // await notifyWeeklyMovies()
+  // await notifyDailyMovies()
+}
 
-  // server.log('Notify daily at 8:00 am. not monday.')
-  // cron.schedule('0 8 * * 2,3,4,5', notifyDailyMovies)
-  await task.close()
-}).catch(ex => {
-  server.error(ex)
-  Sentry.captureException(ex)
-}).finally(()  => {
-  transaction.finish()
-  server.success('Cinema complated.')
-})
+
+
