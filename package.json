@@ -1,6 +1,6 @@
 {
   "name": "task-cinema",
-  "version": "1.5.8",
+  "version": "1.5.9",
   "description": "cinema dump data from website",
   "main": "index.js",
   "scripts": {
