@@ -1,12 +1,10 @@
 {
   "name": "task-cinema",
   "version": "1.5.9",
-  "description": "cinema dump data from website",
+  "description": "cinema from website",
   "main": "index.js",
   "scripts": {
-    "dev": "env-cmd node index.js",
-    "start": "node index.js",
-    "eslint": "eslint --ext .js --ignore-path .eslintignore ."
+    "test": "nightwatch --env selenium_server ./tests/specs"
   },
   "repository": {
     "type": "git",
@@ -18,19 +16,10 @@
     "url": "https://github.com/dvgamerr/task-cinema/issues"
   },
   "homepage": "https://github.com/dvgamerr/task-cinema#readme",
-  "dependencies": {
-    "@sentry/node": "^6.2.2",
-    "@touno-io/db": "^2.9.6",
-    "@touno-io/debuger": "^2.4.0",
-    "axios": "^0.21.1",
-    "axios-retry": "^3.1.9",
-    "dayjs": "^1.10.4",
-    "moment": "^2.29.1",
-    "numeral": "^2.0.6"
-  },
   "devDependencies": {
-    "env-cmd": "^10.1.0",
-    "eslint": "^7.16.0"
+    "chromedriver": "^103.0.0",
+    "@nightwatch/selenium-server": "^4.1.2",
+    "nightwatch": "^2.3.0"
   },
   "keywords": [
     "cinema"
