@@ -1,6 +1,6 @@
 const { basename } = require('path')
 const dayjs = require('dayjs')
-const { getId, JSONRead, JSONWrite } = require('../../collector')
+const { getId, JSONWrite } = require('../../collector')
 
 let cinemaItems = []
 
@@ -33,7 +33,7 @@ const cinemaParse = async (browser, e) => {
     time,
     cover,
     url: `https://www.majorcineplex.com${link}`,
-    cinema: [ 'major' ]
+    theater: [ 'major' ]
   })
 
   return true
@@ -50,7 +50,7 @@ describe('Collection Major Cineplex', () => {
       .click('.navrl-lang a.btn-lang').pause(1000)
       .waitForElementPresent('a.change_lang[data-id="en"]')
       .click('a.change_lang[data-id="en"]').pause(1000)
-      .assert.elementPresent('#movie-page-showing')
+      .assert.elementPresent('#movie-page-showing').pause(1000)
       .elements('css selector', 'div#movie-page-showing div.ml-box')
 
     for await (const e of movies) {
@@ -66,7 +66,7 @@ describe('Collection Major Cineplex', () => {
       .click('.navrl-lang a.btn-lang').pause(1000)
       .waitForElementPresent('a.change_lang[data-id="en"]')
       .click('a.change_lang[data-id="en"]').pause(1000)
-      .assert.elementPresent('#movie-page-coming')
+      .assert.elementPresent('#movie-page-coming').pause(1000)
       .elements('css selector', 'div#movie-page-coming div.ml-box')
 
     for await (const e of movies) {
@@ -79,9 +79,19 @@ describe('Collection Major Cineplex', () => {
     if (cinemaItems.length == 0) throw new Error('Cinema is Empty.')
     // cinemaItems = await JSONRead()
     for (let i = cinemaItems.length - 1; i >= 0; i--) {
+      const [ , name ] = /([\w-]+)/ig.exec(cinemaItems[i].name)
+      if (!name) {
+        cinemaItems[i].name = name.replace(/-$|^-/ig, '')
+      }
+
       const release = dayjs(cinemaItems[i].release, 'DD MMM YYYY')
       if (release.isValid()) {
         cinemaItems[i].release = release.toDate()
+      }
+      let [ , time ] = /(\d+)/ig.exec(cinemaItems[i].time)
+      time = parseInt(time)
+      if (!isNaN(time)) {
+        cinemaItems[i].time = time
       }
 
       for (let l = 0; l < cinemaItems.length; l++) {
