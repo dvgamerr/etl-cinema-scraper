@@ -18,10 +18,12 @@
   "homepage": "https://github.com/dvgamerr/task-cinema#readme",
   "devDependencies": {
     "chromedriver": "^103.0.0",
-    "@nightwatch/selenium-server": "^4.1.2",
     "nightwatch": "^2.3.0"
   },
   "keywords": [
     "cinema"
-  ]
+  ],
+  "dependencies": {
+    "dayjs": "^1.11.4"
+  }
 }

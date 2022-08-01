@@ -4,7 +4,7 @@ module.exports = {
       "es6": true,
       "node": true
     },
-    "ignorePatterns": ["tests"],
+    // "ignorePatterns": ["tests"],
     "extends": "eslint:recommended",
     "globals": {
       "Atomics": "readonly",

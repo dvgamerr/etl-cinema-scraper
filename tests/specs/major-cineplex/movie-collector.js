@@ -1,7 +1,8 @@
 const { basename } = require('path')
-const { getId, JSONWrite } = require('../../collector')
+const dayjs = require('dayjs')
+const { getId, JSONRead, JSONWrite } = require('../../collector')
 
-const cinemaItems = []
+let cinemaItems = []
 
 const cinemaParse = async (browser, e) => {
   const eId = getId(e)
@@ -31,8 +32,8 @@ const cinemaParse = async (browser, e) => {
     genre,
     time,
     cover,
-    link: `https://www.majorcineplex.com${link}`,
-    major: true
+    url: `https://www.majorcineplex.com${link}`,
+    cinema: [ 'major' ]
   })
 
   return true
@@ -45,10 +46,10 @@ describe('Collection Major Cineplex', () => {
     const movies = await browser
       .navigateTo('https://www.majorcineplex.com/movie#movie-page-showing')
       .waitForElementPresent('.navrl-lang a.btn-lang')
+      .waitForElementVisible('.navrl-lang a.btn-lang')
       .click('.navrl-lang a.btn-lang').pause(1000)
-      .waitForElementPresent('.navrl-lang a.change_lang[data-id="en"]')
+      .waitForElementPresent('a.change_lang[data-id="en"]')
       .click('a.change_lang[data-id="en"]').pause(1000)
-      .assert.elementPresent('#SelectLang')
       .assert.elementPresent('#movie-page-showing')
       .elements('css selector', 'div#movie-page-showing div.ml-box')
 
@@ -61,10 +62,10 @@ describe('Collection Major Cineplex', () => {
     const movies = await browser
       .navigateTo('https://www.majorcineplex.com/movie#movie-page-coming')
       .waitForElementPresent('.navrl-lang a.btn-lang')
+      .waitForElementVisible('.navrl-lang a.btn-lang')
       .click('.navrl-lang a.btn-lang').pause(1000)
-      .waitForElementPresent('.navrl-lang a.change_lang[data-id="en"]')
+      .waitForElementPresent('a.change_lang[data-id="en"]')
       .click('a.change_lang[data-id="en"]').pause(1000)
-      .assert.elementPresent('#SelectLang')
       .assert.elementPresent('#movie-page-coming')
       .elements('css selector', 'div#movie-page-coming div.ml-box')
 
@@ -76,22 +77,22 @@ describe('Collection Major Cineplex', () => {
   it('Normailize data and save collection', async (browser) => {
     await browser.assert.elementPresent('#movie-page-coming')
     if (cinemaItems.length == 0) throw new Error('Cinema is Empty.')
-
+    // cinemaItems = await JSONRead()
     for (let i = cinemaItems.length - 1; i >= 0; i--) {
-      let duplicateName = false
-      const cinema = cinemaItems[i];
+      const release = dayjs(cinemaItems[i].release, 'DD MMM YYYY')
+      if (release.isValid()) {
+        cinemaItems[i].release = release.toDate()
+      }
+
       for (let l = 0; l < cinemaItems.length; l++) {
         if (l >= i) { break }
 
-        const check = cinemaItems[l];
-        if (check.name === cinema.name) {
+        if (cinemaItems[l].name === cinemaItems[i].name) {
           cinemaItems.splice(i, 1)
-          duplicateName = true
           break
         }
       }
     }
-
 
     await JSONWrite(basename(__dirname), cinemaItems)
   })
