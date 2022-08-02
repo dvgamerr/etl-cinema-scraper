@@ -17,6 +17,7 @@
   },
   "homepage": "https://github.com/dvgamerr/task-cinema#readme",
   "devDependencies": {
+    "@nightwatch/selenium-server": "^4.1.2",
     "chromedriver": "^103.0.0",
     "eslint": "^7.16.0",
     "nightwatch": "^2.3.0"
