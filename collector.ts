@@ -2,18 +2,15 @@ import { existsSync } from "https://deno.land/std@0.91.0/fs/mod.ts";
 
 const collectorPath = `./output`
 
-export const dirName = collectorPath
+export const DirName = collectorPath
 
-export function getId(webElement: { [key: string]: string }): string {
+export function GetWebId(webElement: { [key: string]: string }): string {
   const [eId] = Object.keys(webElement)
   return webElement[eId]
 }
-// Deno.lstat("hello.txt");
-// Deno.readTextFile("./people.json");
-// Deno.writeTextFile("./people.json");
 
-export async function JSONRead(): Promise<CinemaItem> {
-  const cinema: CinemaItem = {}
+export async function JSONRead(): Promise<CinemaJSON> {
+  const cinema: CinemaJSON = {}
   if (!existsSync(collectorPath)) return cinema
   for await (const file of Deno.readDir(collectorPath)) {
     if ((await Deno.lstat(`${collectorPath}/${file.name}`)).isDirectory) continue
@@ -24,7 +21,7 @@ export async function JSONRead(): Promise<CinemaItem> {
 }
 
 // deno-lint-ignore no-explicit-any
-export async function JSONWrite(filename: string, data: any) {
+export async function JSONWrite(fileName: string, data: any) {
   if (!existsSync(collectorPath)) await Deno.mkdir(collectorPath, { recursive: true })
-  await Deno.writeTextFile(`${collectorPath}/${filename}.json`, JSON.stringify(data, null, 2))
+  await Deno.writeTextFile(`${collectorPath}/${fileName}.json`, JSON.stringify(data, null, 2))
 }
