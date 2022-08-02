@@ -4,11 +4,6 @@ const collectorPath = `./output`
 
 export const DirName = collectorPath
 
-export function GetWebId(webElement: { [key: string]: string }): string {
-  const [eId] = Object.keys(webElement)
-  return webElement[eId]
-}
-
 export async function JSONRead(): Promise<CinemaJSON> {
   const cinema: CinemaJSON = {}
   if (!existsSync(collectorPath)) return cinema
