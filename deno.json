@@ -1,7 +1,7 @@
 {
   "compilerOptions": {
     "types": ["./types.d.ts"],
-    "noImplicitAny": true
+    "noImplicitAny": false
   },
   "lint": {
     "files": {
