@@ -12,21 +12,25 @@ const browser = await puppeteer.launch({
   args: isDev ? ['--fast-start', '--disable-extensions', '--no-sandbox'] : ['--no-sandbox']
 })
 
-const page = await browser.newPage()
-await page.setViewport({ width: 1440, height: 990 })
+const majorPage = await browser.newPage()
+await majorPage.setViewport({ width: 1440, height: 990 })
 
 // Major Cineplex
-log.info('- Search `https://www.majorcineplex.com` Now Showing...');
-const majorShowing = await major.SearchMovieNowShowing(page)
-log.info('- Search `https://www.majorcineplex.com` Comming Soon...');
-const majorCooming = await major.SearchMovieCommingSoon(page)
+log.info('- `https://www.majorcineplex.com` Now Showing...');
+const majorShowing = await major.SearchMovieNowShowing(majorPage)
+log.info('- `https://www.majorcineplex.com` Comming Soon...');
+const majorCooming = await major.SearchMovieCommingSoon(majorPage)
+await majorPage.close()
 
 // SF Cinema 
-log.info('- Search `https://www.sfcinemacity.com/` Now Showing...');
-const sfShowing = await sf.SearchMovieNowShowing(page)
+const sfPage = await browser.newPage()
+await sfPage.setViewport({ width: 1440, height: 990 })
+log.info('- `https://www.sfcinemacity.com/` Now Showing...');
+const sfShowing = await sf.SearchMovieNowShowing(sfPage)
 
-log.info('- Search `https://www.sfcinemacity.com/` Comming Soon...');
-const sfComming = await sf.SearchMovieComming(page)
+log.info('- `https://www.sfcinemacity.com/` Comming Soon...');
+const sfComming = await sf.SearchMovieComming(sfPage)
+await sfPage.close()
 
 await browser.close()
 
