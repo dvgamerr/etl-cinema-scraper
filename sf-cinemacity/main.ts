@@ -14,7 +14,7 @@ export function scrapingCinema(elements: any): CinemaItem[] {
     if (/,.the$/ig.test(name)) { name = `the ${name.replace(/,.the$/i, '')}` }
 
     cinema.push({
-      name: `${name.replace(/\W+/ig, '-').replace(/^\W+|\W+$/ig, '')}`,
+      name,
       display,
       genre: '',
       time: '',
@@ -35,7 +35,7 @@ export function scrapingCinemaDetail(element: any): { genre: string, time: strin
   }
 }
 
-export async function SearchMovieNowShowing(page: Page) {
+export async function SearchMovieNowShowing(page: Page): Promise<CinemaItem[]> {
   await page.goto('https://www.sfcinemacity.com/movies/now-showing')
   await page.waitForNetworkIdle()
   await page.click('.lang-switcher li:last-child > a')

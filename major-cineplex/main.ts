@@ -1,3 +1,94 @@
+import { Page } from "https://deno.land/x/puppeteer@14.1.1/mod.ts";
+import dayjs from "https://cdn.skypack.dev/dayjs@1.11.4";
+
+export async function SearchMovieNowShowing(page: Page): Promise<CinemaItem[]> {
+  await page.goto('https://www.majorcineplex.com/movie#movie-page-showing')
+  await page.waitForNetworkIdle()
+  await page.waitForSelector('a.change_lang[data-id="en"]')
+  // await page.click('.change_lang[data-id="en"]')
+  await page.waitForFunction(`$('a.change_lang[data-id="en"]').click()`)
+  await page.waitForTimeout(3000)
+  await page.waitForSelector('div#movie-page-showing div.ml-box')
+
+  const eMovieCard = await page.waitForFunction(`document.querySelectorAll('div#movie-page-showing div.ml-box')`)
+  const cinemaItems: CinemaItem[] = await page.evaluate(scrapingCinema, eMovieCard)
+
+  for await (const e of cinemaItems) {
+    const release = dayjs(e.release, "DD MMM YYYY")
+    if (release.isValid()) { e.release = release.toDate() }
+  }
+
+
+
+  return cinemaItems
+}
+
+export async function SearchMovieCommingSoon(page: Page): Promise<CinemaItem[]> {
+  // await page.click('#coming-tab')
+  // await page.waitForNetworkIdle()
+  // await page.waitForSelector('a.change_lang[data-id="en"]')
+  // await page.waitForFunction(`$('a.change_lang[data-id="en"]').click()`)
+  // await page.waitForTimeout(3000)
+  // await page.waitForSelector('div#movie-page-coming div.ml-box')
+
+  const eMovieCard = await page.waitForFunction(`document.querySelectorAll('div#movie-page-coming div.ml-box')`)
+  const cinemaItems: CinemaItem[] = await page.evaluate(scrapingCinema, eMovieCard)
+
+  for await (const e of cinemaItems) {
+    const release = dayjs(e.release, "DD MMM YYYY")
+    if (release.isValid()) { e.release = release.toDate() }
+  }
+
+  return cinemaItems
+}
+
+
+export function scrapingCinema(elements): CinemaItem[] {
+  const cinema: CinemaItem[] = []
+  for (const e of elements) {
+
+    const eDisplay = e.querySelector('div.mlb-name > a')
+    const eRelease = e.querySelector('div.mlb-date')
+    const eImg = e.querySelector('.mlb-img')
+    const eGenres = e.querySelectorAll('.mlb-genres > span.genres_span') || []
+
+    if (!eDisplay || !eRelease || !eImg) {
+      console.log('Skip:', eDisplay.textContent)
+      continue
+    }
+
+    if ((eGenres).length < 1) continue
+
+    const [eGenre, eTime] = eGenres
+    const cover = eImg.getAttribute('src')
+    const release = eRelease.textContent.trim()
+    const display = eDisplay.textContent.trim()
+    const link = eDisplay.getAttribute('href')
+    const genre = eGenre.textContent.trim()
+    const [time]: string = eTime ? eTime.textContent.match(/^\d+/i) : ['0']
+
+    if (isNaN(parseInt(time))) {
+      console.warn(`can't parseInt time '${time}'`);
+      continue
+    }
+
+    const [name] = link.replace('/movie/', '').replace(/\W+/ig, '-').match(/[\w-]+$/) || []
+
+    cinema.push({
+      name,
+      display,
+      release,
+      genre,
+      time: parseInt(time),
+      cover,
+      url: `https://www.majorcineplex.com${link}`,
+      theater: ["major"],
+    })
+  }
+  return cinema
+}
+
+
 // const { basename } = require("path");
 // const dayjs = require("dayjs");
 // const { getId, JSONWrite } = require("../../../collector");
@@ -87,45 +178,3 @@
 //       await cinemaParse(browser, e);
 //     }
 //   });
-
-//   it("Normailize data and save collection", async (browser) => {
-//     await browser.assert.elementPresent("#movie-page-coming");
-//     if (cinemaItems.length == 0) throw new Error("Cinema is Empty.");
-//     // cinemaItems = await JSONRead()
-//     for (let i = cinemaItems.length - 1; i >= 0; i--) {
-//       const [, name] = /([\w-]+)/gi.exec(cinemaItems[i].name);
-//       if (!name) {
-//         cinemaItems[i].name = name.replace(/-$|^-/gi, "");
-//       }
-
-//       const release = dayjs(cinemaItems[i].release, "DD MMM YYYY");
-//       if (release.isValid()) {
-//         cinemaItems[i].release = release.toDate();
-//       }
-//       let [, time] = /(\d+)/gi.exec(cinemaItems[i].time);
-//       time = parseInt(time);
-//       if (!isNaN(time)) {
-//         cinemaItems[i].time = time;
-//       }
-
-//       for (let l = 0; l < cinemaItems.length; l++) {
-//         if (l >= i) {
-//           break;
-//         }
-
-//         if (cinemaItems[l].name === cinemaItems[i].name) {
-//           cinemaItems.splice(i, 1);
-//           break;
-//         }
-//       }
-//     }
-
-//     await JSONWrite(basename(__dirname), cinemaItems);
-//   });
-
-//   // it('Validatetion data collector', async (browser) => {
-//   //   for (const cinema of cinemaItems) {
-//   //     console.log(cinema.name)
-//   //   }
-//   // })
-// });
