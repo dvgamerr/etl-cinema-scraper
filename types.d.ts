@@ -1,5 +1,5 @@
 declare interface CinemaJSON {
-  [key: string]: CinemaItem
+  [key: string]: CinemaItem[];
 }
 
 declare interface CinemaItem {
