@@ -25,13 +25,13 @@ jobs:
           [[ "${{ github.ref }}" == "refs/tags/"* ]] && VERSION=v$(echo $VERSION | sed -e 's/^v//')
           # Use Docker `latest` tag convention
           [ "$VERSION" == "main" ] && VERSION=latest
-          echo ::set-output name=docker_image::${{github.actor}}/${IMAGE_NAME}
+          echo ::set-output name=docker_image::${IMAGE_NAME}
           echo ::set-output name=version::${VERSION}
           echo ::set-output name=buildx_args::--platform $PLATFORMS \
             --build-arg VERSION=${VERSION} \
             --build-arg BUILD_DATE=$(date -u +'%Y-%m-%dT%H:%M:%SZ') \
             --build-arg VERSION=$VERSION \
-            --tag ${{github.actor}}/$IMAGE_NAME:$VERSION --file $IMAGE_FILE .
+            --tag $IMAGE_NAME:$VERSION --file $IMAGE_FILE .
       - name: Set up Docker Buildx 📐
         uses: crazy-max/ghaction-docker-buildx@v3
 
