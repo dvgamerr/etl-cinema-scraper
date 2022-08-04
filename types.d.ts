@@ -7,7 +7,8 @@ declare interface CinemaItem {
   display: string;
   release: Date;
   genre: string;
-  time: number | string;
+  timeMin?: string;
+  time: number;
   cover: string;
   url: string;
   theater: string[];

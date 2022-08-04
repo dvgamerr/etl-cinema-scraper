@@ -1,5 +1,5 @@
 import { Page } from "https://deno.land/x/puppeteer@14.1.1/mod.ts"
-import dayjs from "https://cdn.skypack.dev/dayjs@1.11.4";
+import dayjs from "https://cdn.skypack.dev/dayjs@1.11.4"
 
 export function scrapingCinema(elements: any): CinemaItem[] {
   const cinema: CinemaItem[] = []
@@ -17,11 +17,12 @@ export function scrapingCinema(elements: any): CinemaItem[] {
       name,
       display,
       genre: '',
-      time: '',
+      timeMin: '',
       release: new Date(),
       cover,
       url: `https://www.sfcinemacity.com${link.replace('/showtime', '')}`,
-      theater: ['sf']
+      theater: ['sf'],
+      time: 0
     })
   }
   return cinema
@@ -51,13 +52,15 @@ export async function SearchMovieNowShowing(page: Page): Promise<CinemaItem[]> {
 
     const detail = await page.evaluate(scrapingCinemaDetail, eDetail)
 
-    const release = dayjs(detail.release, "YYYY-MM-DD");
+    const release = dayjs(detail.release, "YYYY-MM-DD")
     if (release.isValid()) {
-      item.release = release.toDate();
+      item.release = release.toDate()
     }
 
     item.genre = detail.genre
-    item.time = detail.time
+
+    const [time] = detail.time.match(/^\d+/i) || ['0']
+    item.timeMin = time
   }
   return cinema
 }
@@ -65,7 +68,11 @@ export async function SearchMovieNowShowing(page: Page): Promise<CinemaItem[]> {
 export async function SearchMovieComming(page: Page) {
   await page.goto('https://www.sfcinemacity.com/movies/coming-soon')
   await page.waitForNetworkIdle()
-  await page.click('.lang-switcher li:last-child > a')
+  const langSwitcher = await page.$('.lang-switcher li:last-child > a')
+  if (!langSwitcher) {
+    throw new Error(".lang-switcher not exists")
+  }
+  await langSwitcher.evaluate(b => b.click())
   await page.waitForSelector('.lang-switcher li.active:last-child > a')
 
   const eMovieCard = await page.waitForFunction(`document.querySelectorAll('.movies-coming-soon > .movie-card')`)
@@ -79,13 +86,15 @@ export async function SearchMovieComming(page: Page) {
 
     const detail = await page.evaluate(scrapingCinemaDetail, eDetail)
 
-    const release = dayjs(detail.release, "YYYY-MM-DD");
+    const release = dayjs(detail.release, "YYYY-MM-DD")
     if (release.isValid()) {
-      item.release = release.toDate();
+      item.release = release.toDate()
     }
 
     item.genre = detail.genre
-    item.time = detail.time
+
+    const [time] = detail.time.match(/^\d+/i) || ['0']
+    item.timeMin = time
   }
   return cinema
 }

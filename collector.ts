@@ -8,8 +8,9 @@ export async function JSONRead(): Promise<CinemaJSON> {
   const cinema: CinemaJSON = {}
   if (!existsSync(collectorPath)) return cinema
   for await (const file of Deno.readDir(collectorPath)) {
-    if ((await Deno.lstat(`${collectorPath}/${file.name}`)).isDirectory) continue
-    const data = await Deno.readTextFile(`${collectorPath}/${file}`)
+    const stats = await Deno.lstat(`${collectorPath}/${file.name}`)
+    if (stats.isDirectory || !/\.json$/i.test(file.name)) continue
+    const data = await Deno.readTextFile(`${collectorPath}/${file.name}`)
     cinema[file.name] = JSON.parse(data.toString())
   }
   return cinema
