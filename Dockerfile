@@ -3,7 +3,7 @@ FROM lukechannings/deno:latest
 ENV ENV production
 ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser
 
-RUN apt-get install --no-cache chromium-browser ca-certificates
+RUN apt-get install chromium-browser ca-certificates
 
 WORKDIR /app
 COPY . .
