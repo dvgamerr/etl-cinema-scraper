@@ -1,7 +1,7 @@
 import { Page } from 'https://deno.land/x/puppeteer@14.1.1/mod.ts';
 import dayjs from 'https://cdn.skypack.dev/dayjs@1.11.4';
 
-export function scrapingCinema(elements: any): CinemaItem[] {
+export function scrapingCinema(elements): CinemaItem[] {
   const cinema: CinemaItem[] = [];
   for (const e of elements) {
     const eLink = e.querySelector('a');
@@ -29,7 +29,7 @@ export function scrapingCinema(elements: any): CinemaItem[] {
 }
 
 export function scrapingCinemaDetail(
-  element: any,
+  element,
 ): { genre: string; time: string; release: string } {
   return {
     release: element.querySelector('.release > span:last-child').textContent,
