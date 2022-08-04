@@ -1,19 +1,21 @@
-const dayjs = require('dayjs');
+// deno-lint-ignore-file no-explicit-any
+import dayjs from 'https://cdn.skypack.dev/dayjs@1.11.4';
 
-export default (msg, movies = []) => {
-  let flex = movies.map((e) => {
-    let poster = [
+export default (msg: string, movies: CinemaItem[]) => {
+  const flex: any = movies.map((e) => {
+    const poster: any = [
       {
         type: 'image',
-        url: e.img,
+        url: e.cover,
         size: 'full',
         aspectMode: 'cover',
         aspectRatio: '120:190',
         gravity: 'center',
         flex: 1,
-      },
+      }
     ];
-    if (e.cinema.major) {
+
+    if (e.theater.includes('major')) {
       poster.push({
         type: 'box',
         layout: 'horizontal',
@@ -40,7 +42,8 @@ export default (msg, movies = []) => {
         offsetEnd: '10px',
       });
     }
-    if (e.cinema.sf) {
+
+    if (e.theater.includes('sf')) {
       poster.push({
         type: 'box',
         layout: 'horizontal',
@@ -64,7 +67,7 @@ export default (msg, movies = []) => {
         width: '70px',
         height: '25px',
         paddingStart: '4px',
-        offsetEnd: `${(e.cinema.major ? 60 : 0) + 10}px`,
+        offsetEnd: `${(e.theater.includes('major') ? 60 : 0) + 10}px`,
       });
     }
 
@@ -95,11 +98,10 @@ export default (msg, movies = []) => {
               },
               {
                 type: 'text',
-                text: `${
-                  dayjs(e.release)
-                    .locale('th-TH')
-                    .format('DD MMMM YYYY')
-                }`,
+                text: `${dayjs(e.release)
+                  .locale('th-TH')
+                  .format('DD MMMM YYYY')
+                  }`,
                 color: '#ffffffcc',
                 size: 'xxs',
               },
@@ -126,14 +128,7 @@ export default (msg, movies = []) => {
               type: 'uri',
               label: 'action',
               uri: encodeURI(
-                `https://www.youtube.com/results?search_query=${
-                  e.display.replace(
-                    / /gi,
-                    '+',
-                  )
-                }${
-                  !/^ho/.test(e.name) ? `+${e.name.replace(/ /gi, '+')}` : ''
-                }+trailer`,
+                `https://www.youtube.com/results?search_query=${e.display.replace(/\W/gi, '+')}+trailer`,
               ),
             },
           },

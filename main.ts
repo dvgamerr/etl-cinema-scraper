@@ -4,7 +4,25 @@ import * as log from 'https://deno.land/std@0.149.0/log/mod.ts';
 import * as sf from './sf-cinemacity/main.ts';
 import * as major from './major-cineplex/main.ts';
 import dayjs from 'https://cdn.skypack.dev/dayjs@1.11.4';
+import weekday from 'https://cdn.skypack.dev/dayjs/plugin/weekday'
+import weekOfYear from 'https://cdn.skypack.dev/dayjs/plugin/weekOfYear'
+
 import { JSONRead, JSONWrite } from './collector.ts';
+import flexCarousel from './line-flex.ts'
+
+dayjs.extend(weekday)
+dayjs.extend(weekOfYear)
+
+async function LINEFlexRequest(message: string, items: CinemaItem[]) {
+  const res = await fetch(`http://notice.touno.io/line/popcorn/movie`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(flexCarousel(message, items))
+  });
+
+  const body = await res.json();
+  log.debug(`notice.touno.io (${res.status}): ${JSON.stringify(body)}`);
+}
 
 const isDev = Deno.env.get('ENV') !== 'production';
 await log.setup({
@@ -125,7 +143,7 @@ if (!Deno.env.get('APIS') || !Deno.env.get('TOKEN')) {
 }
 
 log.debug(`Uploading (${cinemaItems.length} movie) WebScraping`);
-const res = await fetch(`${Deno.env.get('APIS')}/api/collector/cinema`, {
+const collector = await fetch(`${Deno.env.get('APIS')}/api/collector/cinema`, {
   method: 'PUT',
   headers: {
     'Content-Type': 'application/json',
@@ -134,9 +152,39 @@ const res = await fetch(`${Deno.env.get('APIS')}/api/collector/cinema`, {
   body: JSON.stringify(cinemaItems),
 });
 
-if (res.status !== 200) {
-  const body = await res.json();
+if (collector.status !== 200) {
+  const body = await collector.json();
   log.error(`Uploaded: ${JSON.stringify(body)}`);
+  Deno.exit()
 } else {
   log.debug(' * Uploaded');
+}
+
+if (dayjs().day() !== 1) {
+  Deno.exit()
+}
+
+const res = await fetch(`${Deno.env.get('APIS')}/api/cinema`, {
+  method: 'GET',
+  headers: {
+    'Content-Type': 'application/json',
+    'Authorization': `Bearer ${Deno.env.get('TOKEN')}`,
+  },
+});
+
+const body: CinemaItem[] = await res.json();
+if (res.status !== 200) {
+  log.error(`Cinema: ${JSON.stringify(body)}`);
+  Deno.exit();
+}
+
+const limitFlex = 10;
+const groupFlex = Math.ceil(body.length / limitFlex);
+log.debug(`LINE Flex ${groupFlex} sacle`);
+
+for (let i = 0; i < groupFlex; i++) {
+  await LINEFlexRequest(
+    `ป๊อปคอนขอเสนอ โปรแกรมหนังประจำสัปดาห์ที่ ${dayjs().week()} ปี ${dayjs().year()}${groupFlex > 1 ? ` [${i}/${groupFlex}]` : ""} ครับผม`,
+    body.slice(limitFlex * i, limitFlex * (i + 1))
+  );
 }
