@@ -53,6 +53,7 @@ await log.setup({
 
 log.debug('Puppeteer create launcher...');
 const browser = await puppeteer.launch({
+  executablePath: '/usr/bin/chromium-browser',
   headless: !isDev,
   args: isDev
     ? ['--fast-start', '--no-sandbox']
