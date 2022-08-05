@@ -8,9 +8,9 @@ jobs:
   build:
     runs-on: ubuntu-18.04
     env:
-      IMAGE_FILE: arm64.Dockerfile
+      IMAGE_FILE: Dockerfile
       IMAGE_NAME: ${{ github.repository }}
-      PLATFORMS: linux/amd64,linux/arm64
+      PLATFORMS: linux/amd64 #,linux/arm64
     outputs:
       container_name: ${{ steps.prepare.outputs.docker_image }}:${{ steps.prepare.outputs.version }}
       version: ${{ steps.prepare.outputs.version }}
