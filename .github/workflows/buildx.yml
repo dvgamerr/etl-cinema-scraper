@@ -8,7 +8,7 @@ jobs:
   build:
     runs-on: ubuntu-18.04
     env:
-      IMAGE_FILE: Dockerfile
+      IMAGE_FILE: arm64.Dockerfile
       IMAGE_NAME: ${{ github.repository }}
       PLATFORMS: linux/amd64,linux/arm64
     outputs:
@@ -38,7 +38,7 @@ jobs:
         uses: crazy-max/ghaction-docker-buildx@v3
 
       - name: Docker Buildx ⚙️
-        run: docker buildx build --output "type=image,push=false" --file ./arm64.Dockerfile ${{ steps.prepare.outputs.buildx_args }}
+        run: docker buildx build --output "type=image,push=false" ${{ steps.prepare.outputs.buildx_args }}
 
       - name: Login to DockerHub
         if: success() && github.event_name != 'pull_request'
@@ -49,7 +49,7 @@ jobs:
 
       - name: Docker Push 📌
         if: success() && github.event_name != 'pull_request'
-        run: docker buildx build --output "type=image,push=true" --file ./arm64.Dockerfile ${{ steps.prepare.outputs.buildx_args }}
+        run: docker buildx build --output "type=image,push=true" ${{ steps.prepare.outputs.buildx_args }}
 
       - name: Inspect 🔍
         if: always() && github.event_name != 'pull_request'
