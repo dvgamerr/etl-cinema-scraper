@@ -1,4 +1,4 @@
-import dayjs from "dayjs";
+import dayjs from "dayjs"
 
 export default (msg, movies) => {
   const flex = movies.map((e) => {
@@ -12,7 +12,7 @@ export default (msg, movies) => {
         gravity: "center",
         flex: 1,
       },
-    ];
+    ]
 
     if (e.theater.includes("major")) {
       poster.push({
@@ -39,7 +39,7 @@ export default (msg, movies) => {
         height: "25px",
         paddingStart: "4px",
         offsetEnd: "10px",
-      });
+      })
     }
 
     if (e.theater.includes("sf")) {
@@ -67,7 +67,7 @@ export default (msg, movies) => {
         height: "25px",
         paddingStart: "4px",
         offsetEnd: `${(e.theater.includes("major") ? 60 : 0) + 10}px`,
-      });
+      })
     }
 
     return {
@@ -137,12 +137,12 @@ export default (msg, movies) => {
         paddingAll: "0px",
         cornerRadius: "0px",
       },
-    };
-  });
+    }
+  })
 
   return {
     type: "flex",
     altText: msg,
     contents: { type: "carousel", contents: flex },
-  };
-};
+  }
+}

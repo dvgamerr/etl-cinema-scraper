@@ -15,6 +15,7 @@
   },
   "dependencies": {
     "dayjs": "^1.11.10",
+    "duckdb": "^0.10.1",
     "pino": "^8.20.0",
     "puppeteer": "^22.6.4"
   }
