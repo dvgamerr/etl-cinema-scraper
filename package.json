@@ -1,0 +1,21 @@
+{
+  "name": "cinema-cronj",
+  "module": "index.js",
+  "type": "module",
+  "scripts": {
+    "start": "bun .",
+    "dev": "bun . | pino-pretty"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "pino-pretty": "^11.0.0"
+  },
+  "peerDependencies": {
+    "typescript": "^5.0.0"
+  },
+  "dependencies": {
+    "dayjs": "^1.11.10",
+    "pino": "^8.20.0",
+    "puppeteer": "^22.6.4"
+  }
+}
