@@ -6,7 +6,7 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-latest
     env:
       IMAGE_FILE: Dockerfile
       IMAGE_NAME: ${{ github.repository }}
@@ -15,7 +15,7 @@ jobs:
       container_name: ${{ steps.prepare.outputs.docker_image }}:${{ steps.prepare.outputs.version }}
       version: ${{ steps.prepare.outputs.version }}
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
 
       - name: Prepare 🔰
         id: prepare
