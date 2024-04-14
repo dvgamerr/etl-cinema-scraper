@@ -1,4 +1,4 @@
-name: BuildX
+name: buildx
 
 on:
   push:
@@ -15,9 +15,10 @@ jobs:
       container_name: ${{ steps.prepare.outputs.docker_image }}:${{ steps.prepare.outputs.version }}
       version: ${{ steps.prepare.outputs.version }}
     steps:
-      - uses: actions/checkout@v4
+      - name: 🔰 Checkout
+        uses: actions/checkout@v4
 
-      - name: Prepare 🔰
+      - name: ⚙️ Prepare 
         id: prepare
         run: |
           VERSION=$(echo "${{ github.ref }}" | sed -e 's,.*/\(.*\),\1,')
@@ -37,20 +38,20 @@ jobs:
       - name: Set up Docker Buildx 📐
         uses: docker/setup-buildx-action@v3
 
-      - name: Docker Buildx ⚙️
+      - name: 📦 Docker Buildx
         run: docker buildx build --output "type=image,push=false" ${{ steps.prepare.outputs.buildx_args }}
 
-      - name: Login to DockerHub
+      - name: 🔒 Login to DockerHub 
         if: success() && github.event_name != 'pull_request'
-        uses: docker/login-action@v1
+        uses: docker/login-action@v3
         with:
           username: ${{ github.actor }}
           password: ${{ secrets.DOCKER_TOKEN }}
 
-      - name: Docker Push 📌
+      - name: 📌 Docker Push 
         if: success() && github.event_name != 'pull_request'
         run: docker buildx build --output "type=image,push=true" ${{ steps.prepare.outputs.buildx_args }}
 
-      - name: Inspect 🔍
+      - name: 🔍 Inspect 
         if: always() && github.event_name != 'pull_request'
         run: docker buildx imagetools inspect ${{ steps.prepare.outputs.docker_image }}:${{ steps.prepare.outputs.version }}
