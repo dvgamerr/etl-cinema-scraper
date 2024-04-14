@@ -44,7 +44,7 @@ export async function SearchMovieCommingSoon(page) {
     if (release.isValid()) e.release = release.toDate()
   }
 
-  return []
+  return cinemaItems
 }
 
 const scrapingCinema = async (elements) => {
@@ -59,23 +59,37 @@ const scrapingCinema = async (elements) => {
 
 
     const display = await eDisplay.evaluate((e) => e.textContent.trim())
-    if (!eRelease || !eImg || eGenres.length < 1) {
-      logger.warn(`Skip: ${display}`)
-      continue
-    }
-    const [eGenre, eTime] = eGenres
 
-    const imgStyle = await eImg.evaluate((e) => e.getAttribute('style'))
-    const release = await eRelease.evaluate((e) => e.textContent.trim())
-    const link = await eDisplay.evaluate((e) => e.getAttribute('href'))
-    const genre = await eGenre.evaluate((e) => e.textContent.trim())
-    
+    // if (!eRelease || !eImg || eGenres.length < 1) {
+    //   logger.debug({ eRelease, eImg, eGenres })
+    //   logger.warn(`Skip: ${display}`)
+    // }
+
+    let genre = ''
     let [timeMin] = ['0']
-    if (eTime) {
-      [ timeMin ] = await eTime.evaluate((e) => e.textContent.match(/^\d+/i))
+    if (eGenres.length > 0) {
+      const [eGenre, eTime] = eGenres
+      genre = await eGenre.evaluate((e) => e.textContent.trim())
+
+      if (eTime) {
+        [ timeMin ] = await eTime.evaluate((e) => e.textContent.match(/^\d+/i))
+      }
     }
+
+    let cover = ''
+    if (eImg) {
+      const imgStyle = await eImg.evaluate((e) => e.getAttribute('style'))
+      const [ , img ] = /\((.*?)\)/.exec(imgStyle)
+      cover = img
+    }
+
+    let release = ''
+    if (eRelease) {
+      release = await eRelease.evaluate((e) => e.textContent.trim())
+    }
+
+    const link = await eDisplay.evaluate((e) => e.getAttribute('href'))
     const [ name ] = link.replace('/movie/', '').replace(/\W+/ig, '-').match(/[\w-]+$/) || []
-    const [ , cover ] = /\((.*?)\)/.exec(imgStyle)
 
     cinema.push({
       name,

@@ -1,10 +1,11 @@
 {
-  "name": "cinema-cronj",
+  "name": "cinema-scraper",
+  "version": "v1.0",
   "module": "index.js",
   "type": "module",
   "scripts": {
     "start": "bun .",
-    "dev": "bun . | pino-pretty"
+    "dev": "bun . -o file | pino-pretty"
   },
   "devDependencies": {
     "@types/bun": "latest",

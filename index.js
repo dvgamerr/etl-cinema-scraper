@@ -1,5 +1,7 @@
 import puppeteer from 'puppeteer'
 import duckdb from 'duckdb'
+import { parseArgs } from "util"
+
 import { logger } from './untils'
 import * as sf from './plugins/sf-cinemacity'
 import * as major from './plugins/major-cineplex'
@@ -12,6 +14,18 @@ import { JSONWrite } from "./untils/collector"
 
 dayjs.extend(weekday)
 dayjs.extend(weekOfYear)
+
+const { values: argv } = parseArgs({
+  args: Bun.argv,
+  options: {
+    output: { short: 'o', type: 'string' }
+  },
+  strict: true,
+  allowPositionals: true,
+})
+if (argv.output !== 'file') {
+  logger.level = 'error'
+}
 
 // async function LINEFlexRequest(message, items) {
 //   const res = await fetch(`http://notice.touno.io/line/popcorn/movie`, {
@@ -88,15 +102,12 @@ for (let i = cinemaItems.length - 1; i >= 0; i--) {
     cinemaItems.splice(i, 1)
     continue
   }
+  cinemaItems[i].name = name
 
   const [time] = (cinemaItems[i].timeMin || "").match(/^\d+/i) || ["0"]
-  if (isNaN(parseInt(time))) {
-    console.warn(`can't parseInt time '${time}'`)
-    continue
+  if (!isNaN(parseInt(time))) {
+    cinemaItems[i].time = parseInt(time)
   }
-
-  cinemaItems[i].time = parseInt(time)
-  cinemaItems[i].name = name
   delete cinemaItems[i].timeMin
 
   for (let l = 0; l < cinemaItems.length; l++) {
@@ -113,7 +124,11 @@ for (let i = cinemaItems.length - 1; i >= 0; i--) {
 }
 
 logger.info("Saving WebScraping")
-await JSONWrite("web-scraping", cinemaItems)
+if (argv.output === 'file') {
+  await JSONWrite("web-scraping", cinemaItems)
+  process.exit()
+}
+console.log(JSON.stringify(cinemaItems))
 
 // const data = await JSONRead()
 // const cinemaItems = data['web-scraping.json']
