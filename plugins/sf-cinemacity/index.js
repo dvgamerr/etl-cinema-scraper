@@ -19,13 +19,12 @@ export function scrapingCinema(elements) {
       time: 0,
       timeMin: '',
       release: new Date(),
-      theater: [
-        {
-          name: 'sf',
+      theater: {
+        'sf':  {
           cover,
           url: `https://www.sfcinemacity.com${link.replace('/showtime', '')}`,
         }
-      ],
+      }
     })
   }
   return cinema
@@ -50,7 +49,7 @@ export async function SearchMovieNowShowing(page) {
   const cinema = await page.evaluate(scrapingCinema, eMovieCard)
 
   for await (const item of cinema) {
-    await page.goto(item.url)
+    await page.goto(item.theater.sf.url)
     await page.waitForSelector('.lang-switcher li.active:last-child > a')
 
     const eDetail = await page.waitForFunction(
@@ -88,7 +87,7 @@ export async function SearchMovieComming(page) {
   const cinema = await page.evaluate(scrapingCinema, eMovieCard)
 
   for await (const item of cinema) {
-    await page.goto(item[0].url)
+    await page.goto(item.theater.sf.url)
     await page.waitForSelector('.lang-switcher li.active:last-child > a')
 
     const eDetail = await page.waitForFunction(

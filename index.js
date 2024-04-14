@@ -113,16 +113,9 @@ for (let i = cinemaItems.length - 1; i >= 0; i--) {
   for (let l = 0; l < cinemaItems.length; l++) {
     if (l == i) continue
 
-    
-
-    
-    
-
     if (cinemaItems[l].name === cinemaItems[i].name) {
-      cinemaItems[l].theater = Array.from(
-        new Set(cinemaItems[i].theater.concat(cinemaItems[l].theater))
-      )
-      cinemaItems.splice(i, 1)
+      cinemaItems[l].theater = Object.assign(cinemaItems[l].theater, cinemaItems[i].theater)
+      cinemaItems.splice(l, 1)
       break
     }
   }
