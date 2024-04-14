@@ -98,7 +98,7 @@ for (let i = cinemaItems.length - 1; i >= 0; i--) {
       .match(/[\w-]+/i) || []
 
   if (!name) {
-    logger.warning(`can't parse cinema name '${cinemaItems[i].url}'`)
+    logger.warning(`can't parse cinema '${JSON.stringify(cinemaItems[i].theater)}'`)
     cinemaItems.splice(i, 1)
     continue
   }
@@ -112,6 +112,11 @@ for (let i = cinemaItems.length - 1; i >= 0; i--) {
 
   for (let l = 0; l < cinemaItems.length; l++) {
     if (l == i) continue
+
+    
+
+    
+    
 
     if (cinemaItems[l].name === cinemaItems[i].name) {
       cinemaItems[l].theater = Array.from(

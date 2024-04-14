@@ -98,9 +98,13 @@ const scrapingCinema = async (elements) => {
       genre,
       timeMin,
       time: 0,
-      cover,
-      url: `https://www.majorcineplex.com${link}`,
-      theater: ['major'],
+      theater: [
+        {
+          name: 'major',
+          cover,
+          url: `https://www.majorcineplex.com${link}`,
+        }
+      ],
     })
   }
   return cinema
