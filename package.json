@@ -4,20 +4,30 @@
   "module": "index.js",
   "type": "module",
   "scripts": {
+    "prepare": "husky",
     "start": "bun .",
     "dev": "bun . -o file | pino-pretty"
   },
+  "lint-staged": {
+    "*": "prettier --check . --write",
+    "*.js": "eslint --fix"
+  },
   "devDependencies": {
+    "@commitlint/cli": "^19.6.1",
+    "@commitlint/config-conventional": "^19.6.0",
+    "@eslint/js": "^9.19.0",
     "@types/bun": "latest",
-    "pino-pretty": "^11.0.0"
+    "eslint": "^9.19.0",
+    "globals": "^15.14.0",
+    "lint-staged": "^15.4.3",
+    "pino-pretty": "13.0.0"
   },
   "peerDependencies": {
     "typescript": "^5.0.0"
   },
   "dependencies": {
     "dayjs": "^1.11.10",
-    "duckdb": "^0.10.1",
-    "pino": "^8.20.0",
-    "puppeteer": "^22.6.4"
+    "pino": "9.6.0",
+    "puppeteer": "^24.1.1"
   }
 }
