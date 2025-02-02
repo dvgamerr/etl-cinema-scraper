@@ -1,31 +1,15 @@
-import puppeteer from 'puppeteer'
-import duckdb from 'duckdb'
-import { parseArgs } from "util"
-
-import { logger } from './untils'
-import * as sf from './plugins/sf-cinemacity'
-import * as major from './plugins/major-cineplex'
+import { logger, parseArgs } from './untils'
+import { JSONRead, standardizeCinemaEntries } from './untils/collector'
 import dayjs from 'dayjs'
 import weekday from 'dayjs/plugin/weekday'
 import weekOfYear from 'dayjs/plugin/weekOfYear'
 
-import { JSONWrite } from "./untils/collector"
+import { JSONWrite } from './untils/collector'
+import cinemaScraper from './plugins/cinema-scraper'
 // import flexCarousel from "./untils/line-flex"
 
 dayjs.extend(weekday)
 dayjs.extend(weekOfYear)
-
-const { values: argv } = parseArgs({
-  args: Bun.argv,
-  options: {
-    output: { short: 'o', type: 'string' }
-  },
-  strict: true,
-  allowPositionals: true,
-})
-if (argv.output !== 'file') {
-  logger.level = 'error'
-}
 
 // async function LINEFlexRequest(message, items) {
 //   const res = await fetch(`http://notice.touno.io/line/popcorn/movie`, {
@@ -38,106 +22,26 @@ if (argv.output !== 'file') {
 //   logger.info(`notice.touno.io (${res.status}): ${JSON.stringify(body)}`)
 // }
 
-const isDev = Bun.env.ENV !== "production"
-
-logger.info("Puppeteer create launcher...")
-const db = new duckdb.Database(':memory:')
-const browser = await puppeteer.launch({
-  headless: isDev,
-  args: isDev
-    ? ["--fast-start", "--no-sandbox"]
-    : [
-        "--no-sandbox",
-        "--disable-setuid-sandbox",
-        "--headless",
-        "--disable-gpu",
-      ],
-})
-
-// Major Cineplex
-logger.info("New page `https://www.majorcineplex.com`")
-const majorPage = await browser.newPage()
-await majorPage.setViewport({ width: 1440, height: 990 })
-logger.info(" * Now Showing & Comming Soon")
-
-const majorShowing = await major.SearchMovieNowShowing(majorPage)
-const majorCooming = await major.SearchMovieCommingSoon(majorPage)
-
-await majorPage.close()
-
-logger.info(" * Caching Json")
-await JSONWrite("major-cineplex", majorShowing.concat(majorCooming))
-
-// SF Cinema
-logger.info("New page `https://www.sfcinemacity.com/`")
-let sfPage = await browser.newPage()
-await sfPage.setViewport({ width: 1440, height: 990 })
-logger.info(" * Now Showing...")
-const sfShowing = await sf.SearchMovieNowShowing(sfPage)
-await sfPage.close()
-
-logger.info(" * Comming Soon...")
-sfPage = await browser.newPage()
-const sfComming = await sf.SearchMovieComming(sfPage)
-await sfPage.close()
-
-logger.info(" * Caching Json")
-await JSONWrite("sf-cinemacity", sfShowing.concat(sfComming))
-
-await browser.close()
-
-const cinemaItems = [].concat(majorShowing, majorCooming, sfShowing, sfComming)
-
-logger.info("Normalize data collection")
-for (let i = cinemaItems.length - 1; i >= 0; i--) {
-  const [name] =
-    cinemaItems[i].name
-      .toLowerCase()
-      .replace(/^\W+|\W+$/gi, "")
-      .replace(/\W+/gi, "-")
-      .match(/[\w-]+/i) || []
-
-  if (!name) {
-    logger.warning(`can't parse cinema '${JSON.stringify(cinemaItems[i].theater)}'`)
-    cinemaItems.splice(i, 1)
-    continue
-  }
-  cinemaItems[i].name = name
-
-  const [time] = (cinemaItems[i].timeMin || "").match(/^\d+/i) || ["0"]
-  if (!isNaN(parseInt(time))) {
-    cinemaItems[i].time = parseInt(time)
-  }
-  delete cinemaItems[i].timeMin
-
-  for (let l = 0; l < cinemaItems.length; l++) {
-    if (l == i) continue
-
-    if (cinemaItems[l].name === cinemaItems[i].name) {
-      cinemaItems[l].theater = Object.assign(cinemaItems[l].theater, cinemaItems[i].theater)
-      cinemaItems.splice(l, 1)
-      break
-    }
-  }
+let rawItems = []
+if (parseArgs.dryrun === true) {
+  const major = await JSONRead('major-cineplex.json')
+  const sf = await JSONRead('sf-cinemacity.json')
+  rawItems = [...major, ...sf]
+} else {
+  rawItems = await cinemaScraper()
 }
 
-logger.info("Saving WebScraping")
-if (argv.output === 'file') {
-  await JSONWrite("web-scraping", cinemaItems)
-  process.exit()
+logger.info('Stardardize cinema WebScraping...')
+const cinemaItems = await standardizeCinemaEntries(rawItems)
+logger.info('Saving cinema...')
+if (parseArgs.output === 'file') {
+  await JSONWrite('results.json', cinemaItems)
+} else {
+  console.log(cinemaItems[0])
 }
-console.log(JSON.stringify(cinemaItems))
 
-// const data = await JSONRead()
-// const cinemaItems = data['web-scraping.json']
-// console.logger(Bun.env.APIS, Bun.env.TOKEN)
-
-// if (!Bun.env.APIS || !Bun.env.TOKEN) {
-//   logger.warning("Skip: Uploaded")
-//   Deno.exit()
-// }
-
-logger.info(`Uploading (${cinemaItems.length} movie) WebScraping`)
+logger.info(`Uploading total: ${cinemaItems.length} movies`)
+// logger.info(`${normalizeItems.length} movies normalizer`)
 
 // const collector = await fetch(`${Bun.env.APIS}/api/collector/cinema`, {
 //   method: "PUT",

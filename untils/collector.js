@@ -1,29 +1,56 @@
-import { mkdir } from "node:fs/promises"
-import { logger } from './'
-
+import { mkdir } from 'node:fs/promises'
+import { logger } from '.'
 const collectorPath = `./output`
 
 export const DirName = collectorPath
 
-export async function JSONRead() {
+export async function JSONRead(fileName) {
   const cinema = {}
-  const collFile = Bun.file(collectorPath)
-
-  if (!await collFile.exists()) return cinema
-  // for await (const file of Deno.readDir(collectorPath)) {
-
-  // const text = await collFile.text();
-  //   const data = await Bun.readTextFile(`${collectorPath}/${file.name}`)
-  //   cinema[file.name] = JSON.parse(text)
-  // }
-  return cinema
+  const collFile = Bun.file(`${collectorPath}/${fileName}`)
+  if (!(await collFile.exists())) return cinema
+  const contents = await collFile.json()
+  return contents
 }
 
 export async function JSONWrite(fileName, data) {
   await mkdir(collectorPath, { recursive: true })
-  // const collFile = Bun.file(collectorPath)
-  // if (!await collFile.exists()) {
-  //   await Deno.mkdir(collectorPath, { recursive: true })
-  // }
-  await Bun.write(`${collectorPath}/${fileName}.json`, JSON.stringify(data, null, 2))
+
+  await Bun.write(`${collectorPath}/${fileName}`, JSON.stringify(data, null, 2))
+}
+
+export const standardizeCinemaEntries = async (items = []) => {
+  for (let i = items.length - 1; i >= 0; i--) {
+    const [name] =
+      items[i].name
+        .toLowerCase()
+        .replace(/^\W+|\W+$/gi, '')
+        .replace(/\W+/gi, '-')
+        .match(/[\w-]+/i) || []
+
+    if (!name) {
+      logger.warning(`can't parse cinema '${JSON.stringify(items[i].theater)}'`)
+      items.splice(i, 1)
+      continue
+    }
+    items[i].name = name
+
+    const [time] = (items[i].timeMin || '').match(/^\d+/i) || ['0']
+    if (!isNaN(parseInt(time))) items[i].time = parseInt(time)
+    delete items[i].timeMin
+
+    for (let l = 0; l < items.length; l++) {
+      if (l == i) continue
+
+      if (items[l].name === items[i].name) {
+        items[i].theater = { ...items[l].theater, ...items[i].theater }
+        items[i].genre = items[i].genre || items[l].genre
+        items[i].release = items[i].release || items[l].release
+        items[i].time = !items[i].time ? items[i].time : items[l].time
+        items[i].timeMin = items[i].timeMin || items[l].timeMin
+        items.splice(l, 1)
+        break
+      }
+    }
+  }
+  return items
 }
