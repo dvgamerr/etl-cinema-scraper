@@ -10,7 +10,7 @@ export function scrapingCinema(elements) {
     const [, cover] = image.match(/url\("(.+?)"\)/i)
 
     let name = display.toLowerCase()
-    if (/,.the$/ig.test(name)) name = `the ${name.replace(/,.the$/i, '')}`
+    if (/,.the$/gi.test(name)) name = `the ${name.replace(/,.the$/i, '')}`
 
     cinema.push({
       name,
@@ -20,11 +20,11 @@ export function scrapingCinema(elements) {
       timeMin: '',
       release: new Date(),
       theater: {
-        'sf':  {
+        sf: {
           cover,
           url: `https://www.sfcinemacity.com${link.replace('/showtime', '')}`,
-        }
-      }
+        },
+      },
     })
   }
   return cinema
@@ -39,22 +39,19 @@ export function scrapingCinemaDetail(element) {
 }
 
 export async function SearchMovieNowShowing(page) {
+  await Bun.sleep(1000)
   await page.goto('https://www.sfcinemacity.com/movies/now-showing')
   await page.waitForNetworkIdle()
   await page.click('.lang-switcher li:last-child > a')
 
-  const eMovieCard = await page.waitForFunction(
-    `document.querySelectorAll('.movies-now-showing > .movie-card')`,
-  )
+  const eMovieCard = await page.waitForFunction(`document.querySelectorAll('.movies-now-showing > .movie-card')`)
   const cinema = await page.evaluate(scrapingCinema, eMovieCard)
 
   for await (const item of cinema) {
     await page.goto(item.theater.sf.url)
     await page.waitForSelector('.lang-switcher li.active:last-child > a')
 
-    const eDetail = await page.waitForFunction(
-      `document.querySelector('.movie-main-detail .detail-wrap')`,
-    )
+    const eDetail = await page.waitForFunction(`document.querySelector('.movie-main-detail .detail-wrap')`)
 
     const detail = await page.evaluate(scrapingCinemaDetail, eDetail)
 
@@ -72,6 +69,7 @@ export async function SearchMovieNowShowing(page) {
 }
 
 export async function SearchMovieComming(page) {
+  await Bun.sleep(1000)
   await page.goto('https://www.sfcinemacity.com/movies/coming-soon')
   await page.waitForNetworkIdle()
   const langSwitcher = await page.$('.lang-switcher li:last-child > a')
@@ -81,18 +79,14 @@ export async function SearchMovieComming(page) {
   await langSwitcher.evaluate((b) => b.click())
   await page.waitForSelector('.lang-switcher li.active:last-child > a')
 
-  const eMovieCard = await page.waitForFunction(
-    `document.querySelectorAll('.movies-coming-soon > .movie-card')`,
-  )
+  const eMovieCard = await page.waitForFunction(`document.querySelectorAll('.movies-coming-soon > .movie-card')`)
   const cinema = await page.evaluate(scrapingCinema, eMovieCard)
 
   for await (const item of cinema) {
     await page.goto(item.theater.sf.url)
     await page.waitForSelector('.lang-switcher li.active:last-child > a')
 
-    const eDetail = await page.waitForFunction(
-      `document.querySelector('.movie-main-detail .detail-wrap')`,
-    )
+    const eDetail = await page.waitForFunction(`document.querySelector('.movie-main-detail .detail-wrap')`)
 
     const detail = await page.evaluate(scrapingCinemaDetail, eDetail)
 

@@ -1,7 +1,7 @@
 import util from 'util'
 import pino from 'pino'
 
-export const logger = pino({ level: Bun.env.DEBUG_LEVEL || 'info' })
+export const logger = pino({ level: Bun.env.LOG_LEVEL || 'info' })
 
 const { values: argv } = util.parseArgs({
   args: Bun.argv,

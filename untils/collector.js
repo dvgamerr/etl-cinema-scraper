@@ -32,7 +32,9 @@ export const standardizeCinemaEntries = async (items = []) => {
       items.splice(i, 1)
       continue
     }
-    items[i].name = name
+    items[i].bind = name
+    items[i].name_en = name
+    items[i].name_th = name
 
     const [time] = (items[i].timeMin || '').match(/^\d+/i) || ['0']
     if (!isNaN(parseInt(time))) items[i].time = parseInt(time)
@@ -43,6 +45,7 @@ export const standardizeCinemaEntries = async (items = []) => {
 
       if (items[l].name === items[i].name) {
         items[i].theater = { ...items[l].theater, ...items[i].theater }
+        items[i].genre = items[i].display || items[l].display
         items[i].genre = items[i].genre || items[l].genre
         items[i].release = items[i].release || items[l].release
         items[i].time = !items[i].time ? items[i].time : items[l].time

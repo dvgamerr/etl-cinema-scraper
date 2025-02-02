@@ -1,11 +1,26 @@
 import { logger } from '../../untils'
 import dayjs from 'dayjs'
 
-export async function SearchMovieNowShowing(page) {
+export async function SearchMovieAll(page) {
   logger.debug('Open majorcineplex')
   await page.goto('https://www.majorcineplex.com/movie#movie-page-showing')
   await page.waitForNetworkIdle()
 
+  const divShowingPage = 'div#movie-page-showing div.ml-box'
+  const divComingPage = 'div#movie-page-coming div.ml-box'
+
+  await Bun.sleep(1000)
+
+  const cinemaShowingTh = await scrapingCinema(await page.$$(divShowingPage))
+  if (!cinemaShowingTh.length) {
+    logger.warn('SearchMovieNowShowing is empty')
+  }
+  const cinemaComingTh = await scrapingCinema(await page.$$(divComingPage))
+  if (!cinemaComingTh.length) {
+    logger.warn('SearchMovieCommingSoon is empty')
+  }
+
+  await Bun.sleep(2000)
   const selectLang = await page.$('#SelectLang')
   if (!selectLang) throw new Error('#SelectLang not exists')
   await selectLang.evaluate((e) => e.click())
@@ -15,37 +30,51 @@ export async function SearchMovieNowShowing(page) {
   await page.click('a.change_lang[data-id="en"]')
   logger.debug(' div#movie-page-showing')
   await page.waitForSelector('div#movie-page-showing div.ml-box')
-  await Bun.sleep(1000)
+  await Bun.sleep(2000)
 
-  const cinemaItems = await scrapingCinema(await page.$$('div#movie-page-showing div.ml-box'))
-  if (cinemaItems.length === 0) {
+  const cinemaShowingEn = await scrapingCinema(await page.$$(divShowingPage))
+  if (!cinemaShowingEn.length) {
     logger.warn('SearchMovieNowShowing is empty')
-    return []
   }
-
-  for await (const e of cinemaItems) {
-    const release = dayjs(e.release, 'DD MMM YYYY')
-    if (release.isValid()) e.release = release.toDate()
-  }
-
-  return cinemaItems
-}
-
-export async function SearchMovieCommingSoon(page) {
-  const cinemaItems = await scrapingCinema(await page.$$('div#movie-page-coming div.ml-box'))
-
-  if (cinemaItems.length === 0) {
+  const cinemaComingEn = await scrapingCinema(await page.$$(divComingPage))
+  if (!cinemaComingEn.length) {
     logger.warn('SearchMovieCommingSoon is empty')
-    return []
   }
 
-  for await (const e of cinemaItems) {
+  for (const e of cinemaShowingEn) {
     const release = dayjs(e.release, 'DD MMM YYYY')
     if (release.isValid()) e.release = release.toDate()
+
+    e.name_en = e.display
+    e.name_th = cinemaShowingTh.find((x) => x.name === e.name)?.display || e.display
   }
 
-  return cinemaItems
+  for (const e of cinemaComingEn) {
+    const release = dayjs(e.release, 'DD MMM YYYY')
+    if (release.isValid()) e.release = release.toDate()
+
+    e.name_en = e.display
+    e.name_th = cinemaComingTh.find((x) => x.name === e.name)?.display || e.display
+  }
+
+  return cinemaShowingEn.concat(cinemaComingEn)
 }
+
+// export async function SearchMovieCommingSoon(page) {
+//   const cinemaItems = await scrapingCinema(await page.$$(divComingPage))
+
+//   if (cinemaItems.length === 0) {
+//     logger.warn('SearchMovieCommingSoon is empty')
+//     return []
+//   }
+
+//   for await (const e of cinemaItems) {
+//     const release = dayjs(e.release, 'DD MMM YYYY')
+//     if (release.isValid()) e.release = release.toDate()
+//   }
+
+//   return cinemaItems
+// }
 
 const scrapingCinema = async (elements) => {
   const cinema = []
@@ -54,9 +83,8 @@ const scrapingCinema = async (elements) => {
     const eDisplay = await elem.$('.mlb-name > a')
     const eRelease = await elem.$('div.mlb-date')
     const eImg = await elem.$('.mlb-cover')
-    const eGenres = await elem.$$('.mlb-genres > span.genres_span') || []
+    const eGenres = (await elem.$$('.mlb-genres > span.genres_span')) || []
     if (!eDisplay) continue
-
 
     const display = await eDisplay.evaluate((e) => e.textContent.trim())
 
@@ -72,14 +100,14 @@ const scrapingCinema = async (elements) => {
       genre = await eGenre.evaluate((e) => e.textContent.trim())
 
       if (eTime) {
-        [ timeMin ] = await eTime.evaluate((e) => e.textContent.match(/^\d+/i))
+        ;[timeMin] = await eTime.evaluate((e) => e.textContent.match(/^\d+/i))
       }
     }
 
     let cover = ''
     if (eImg) {
       const imgStyle = await eImg.evaluate((e) => e.getAttribute('style'))
-      const [ , img ] = /\((.*?)\)/.exec(imgStyle)
+      const [, img] = /\((.*?)\)/.exec(imgStyle)
       cover = img
     }
 
@@ -89,7 +117,11 @@ const scrapingCinema = async (elements) => {
     }
 
     const link = await eDisplay.evaluate((e) => e.getAttribute('href'))
-    const [ name ] = link.replace('/movie/', '').replace(/\W+/ig, '-').match(/[\w-]+$/) || []
+    const [name] =
+      link
+        .replace('/movie/', '')
+        .replace(/\W+/gi, '-')
+        .match(/[\w-]+$/) || []
 
     cinema.push({
       name,
@@ -99,11 +131,11 @@ const scrapingCinema = async (elements) => {
       timeMin,
       time: 0,
       theater: {
-        'major':  {
+        major: {
           cover,
           url: `https://www.majorcineplex.com${link}`,
-        }
-      }
+        },
+      },
     })
   }
   return cinema
