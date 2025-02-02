@@ -14,6 +14,8 @@ export function scrapingCinema(elements) {
 
     cinema.push({
       name,
+      name_en: '',
+      name_th: '',
       display,
       genre: '',
       time: 0,
@@ -32,38 +34,59 @@ export function scrapingCinema(elements) {
 
 export function scrapingCinemaDetail(element) {
   return {
+    title: element.querySelector('h1.title').textContent,
     release: element.querySelector('.release > span:last-child').textContent,
     genre: element.querySelector('.genre > span:last-child').textContent,
     time: element.querySelector('.system > span:last-child').textContent,
   }
 }
 
+const langSwitcher = async (page, lang) => {
+  const elem = await page.$(`.lang-switcher li:${lang === 'th' ? 'first-child' : 'last-child'} > a`)
+  if (!elem) {
+    throw new Error('.lang-switcher not exists')
+  }
+  await elem.evaluate((b) => b.click())
+  await Bun.sleep(200)
+}
+
 export async function SearchMovieNowShowing(page) {
   await Bun.sleep(1000)
   await page.goto('https://www.sfcinemacity.com/movies/now-showing')
   await page.waitForNetworkIdle()
-  await page.click('.lang-switcher li:last-child > a')
+  await langSwitcher(page, 'en')
+  await Bun.sleep(300)
 
   const eMovieCard = await page.waitForFunction(`document.querySelectorAll('.movies-now-showing > .movie-card')`)
   const cinema = await page.evaluate(scrapingCinema, eMovieCard)
 
   for await (const item of cinema) {
     await page.goto(item.theater.sf.url)
-    await page.waitForSelector('.lang-switcher li.active:last-child > a')
+    await page.waitForSelector('.lang-switcher li.active > a')
+    // switch to thai
+    await langSwitcher(page, 'th')
 
-    const eDetail = await page.waitForFunction(`document.querySelector('.movie-main-detail .detail-wrap')`)
+    const eDetailTh = await page.waitForFunction(`document.querySelector('.movie-main-detail > .row')`)
+    const detailTh = await page.evaluate(scrapingCinemaDetail, eDetailTh)
 
-    const detail = await page.evaluate(scrapingCinemaDetail, eDetail)
+    // switch to english
+    await langSwitcher(page, 'en')
 
-    const release = dayjs(detail.release, 'YYYY-MM-DD')
+    const eDetailEn = await page.waitForFunction(`document.querySelector('.movie-main-detail > .row')`)
+    const detailEn = await page.evaluate(scrapingCinemaDetail, eDetailEn)
+
+    item.name_en = detailEn.title
+    item.name_th = detailTh.title
+    const release = dayjs(detailEn.release, 'YYYY-MM-DD')
     if (release.isValid()) {
       item.release = release.toDate()
     }
 
-    item.genre = detail.genre
+    item.genre = detailEn.genre
 
-    const [time] = detail.time.match(/^\d+/i) || ['0']
+    const [time] = detailEn.time.match(/\d+/i) || ['0']
     item.timeMin = time
+    await Bun.sleep(500)
   }
   return cinema
 }
@@ -72,32 +95,38 @@ export async function SearchMovieComming(page) {
   await Bun.sleep(1000)
   await page.goto('https://www.sfcinemacity.com/movies/coming-soon')
   await page.waitForNetworkIdle()
-  const langSwitcher = await page.$('.lang-switcher li:last-child > a')
-  if (!langSwitcher) {
-    throw new Error('.lang-switcher not exists')
-  }
-  await langSwitcher.evaluate((b) => b.click())
-  await page.waitForSelector('.lang-switcher li.active:last-child > a')
+  await page.waitForSelector('.lang-switcher li.active > a')
+  await langSwitcher(page, 'en')
 
   const eMovieCard = await page.waitForFunction(`document.querySelectorAll('.movies-coming-soon > .movie-card')`)
   const cinema = await page.evaluate(scrapingCinema, eMovieCard)
 
   for await (const item of cinema) {
     await page.goto(item.theater.sf.url)
-    await page.waitForSelector('.lang-switcher li.active:last-child > a')
+    await page.waitForSelector('.lang-switcher li.active > a')
 
-    const eDetail = await page.waitForFunction(`document.querySelector('.movie-main-detail .detail-wrap')`)
+    // switch to thai
+    await langSwitcher(page, 'th')
 
-    const detail = await page.evaluate(scrapingCinemaDetail, eDetail)
+    const eDetailTh = await page.waitForFunction(`document.querySelector('.movie-main-detail > .row')`)
+    const detailTh = await page.evaluate(scrapingCinemaDetail, eDetailTh)
 
-    const release = dayjs(detail.release, 'YYYY-MM-DD')
+    // switch to english
+    await langSwitcher(page, 'en')
+
+    const eDetailEn = await page.waitForFunction(`document.querySelector('.movie-main-detail > .row')`)
+    const detailEn = await page.evaluate(scrapingCinemaDetail, eDetailEn)
+
+    item.name_en = detailEn.title
+    item.name_th = detailTh.title
+    const release = dayjs(detailEn.release, 'YYYY-MM-DD')
     if (release.isValid()) {
       item.release = release.toDate()
     }
 
-    item.genre = detail.genre
+    item.genre = detailEn.genre
 
-    const [time] = detail.time.match(/^\d+/i) || ['0']
+    const [time] = detailEn.time.match(/\d+/i) || ['0']
     item.timeMin = time
   }
   return cinema

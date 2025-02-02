@@ -1,7 +1,7 @@
 import puppeteer from 'puppeteer'
 
 import { logger } from '../untils'
-// import * as sf from './sf-cinemacity'
+import * as sf from './sf-cinemacity'
 import * as major from './major-cineplex'
 
 import { JSONWrite } from '../untils/collector'
@@ -30,24 +30,23 @@ export default async () => {
   logger.info(' * Caching Json')
   await JSONWrite('major-cineplex.json', majorMovies)
 
-  // // SF Cinema
-  // logger.info('New page `https://www.sfcinemacity.com/`')
-  // let sfPage = await browser.newPage()
-  // await sfPage.setViewport({ width: 1440, height: 990 })
-  // logger.info(' * Now Showing...')
-  // const sfShowing = await sf.SearchMovieNowShowing(sfPage)
-  // await sfPage.close()
+  // SF Cinema
+  logger.info('New page `https://www.sfcinemacity.com/`')
+  let sfPage = await browser.newPage()
+  await sfPage.setViewport({ width: 1440, height: 990 })
+  logger.info(' * Now Showing...')
+  const sfShowing = await sf.SearchMovieNowShowing(sfPage)
+  await sfPage.close()
 
-  // logger.info(' * Comming Soon...')
-  // sfPage = await browser.newPage()
-  // const sfComming = await sf.SearchMovieComming(sfPage)
-  // await sfPage.close()
+  logger.info(' * Comming Soon...')
+  sfPage = await browser.newPage()
+  const sfComming = await sf.SearchMovieComming(sfPage)
+  await sfPage.close()
 
-  // logger.info(' * Caching Json')
-  // await JSONWrite('sf-cinemacity.json', sfShowing.concat(sfComming))
+  logger.info(' * Caching Json')
+  await JSONWrite('sf-cinemacity.json', sfShowing.concat(sfComming))
 
   await browser.close()
 
-  // return [].concat(majorShowing, majorCooming, sfShowing, sfComming)
-  return majorMovies
+  return [].concat(majorMovies, sfShowing, sfComming)
 }

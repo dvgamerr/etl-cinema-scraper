@@ -125,6 +125,8 @@ const scrapingCinema = async (elements) => {
 
     cinema.push({
       name,
+      name_en: '',
+      name_th: '',
       display,
       release,
       genre,
