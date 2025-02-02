@@ -32,10 +32,7 @@ export const standardizeCinemaEntries = async (items = []) => {
       items.splice(i, 1)
       continue
     }
-    delete items[i].display
     items[i].bind = name
-    items[i].name_en = name
-    items[i].name_th = name
 
     const [time] = (items[i].timeMin || '').match(/^\d+/i) || ['0']
     if (!isNaN(parseInt(time))) items[i].time = parseInt(time)

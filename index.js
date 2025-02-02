@@ -33,6 +33,14 @@ if (parseArgs.dryrun === true) {
 
 logger.info('Stardardize cinema WebScraping...')
 const cinemaItems = await standardizeCinemaEntries(rawItems)
+const chunkSize = 50
+const cinemaChunks = []
+for (let i = 0; i < cinemaItems.length; i += chunkSize) {
+  cinemaChunks.push(cinemaItems.slice(i, i + chunkSize))
+}
+
+logger.info(` Split ${cinemaChunks.length} chunks, up ${chunkSize} records.`)
+
 logger.info('Saving cinema...')
 if (parseArgs.output === 'file') {
   await JSONWrite('results.json', cinemaItems)
@@ -41,6 +49,22 @@ if (parseArgs.output === 'file') {
 }
 
 logger.info(`Uploading total: ${cinemaItems.length} movies`)
+
+for (const chunks of cinemaChunks) {
+  const res = await fetch(`${Bun.env.STASH_API}/stash/cinema`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'User-Agent': 'etl-cinema-scraper/v2.0',
+    },
+    body: JSON.stringify(chunks),
+  })
+  if (!res.ok) {
+    logger.error(`Upload fail: ${JSON.stringify(await res.json())}`)
+  }
+}
+logger.info(`Uploaded`)
+
 // logger.info(`${normalizeItems.length} movies normalizer`)
 
 // const collector = await fetch(`${Bun.env.APIS}/api/collector/cinema`, {
