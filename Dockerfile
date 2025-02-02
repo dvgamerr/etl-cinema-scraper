@@ -1,8 +1,11 @@
 FROM oven/bun:alpine
 WORKDIR /app
 
-COPY . .
+COPY index.js package.json bun.lockb .
 
-RUN bun i
+COPY ./untils/ ./untils/
+COPY ./plugins/ ./plugins/
 
-ENTRYPOINT ["bun", "start"]
+RUN bun i --ignore-scripts --production
+
+CMD ["bun", "run", "/app/index.js"]

@@ -48,6 +48,11 @@ if (parseArgs.output === 'file') {
   console.log(cinemaItems[0])
 }
 
+if (!Bun.env.STASH_API) {
+  logger.info(`Total: ${cinemaItems.length} movies`)
+  process.exit(0)
+}
+
 logger.info(`Uploading total: ${cinemaItems.length} movies`)
 
 for (const chunks of cinemaChunks) {
