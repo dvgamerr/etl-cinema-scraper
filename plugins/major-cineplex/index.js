@@ -5,6 +5,9 @@ export async function SearchMovieAll(page) {
   logger.debug('Open majorcineplex')
   await page.goto('https://www.majorcineplex.com/movie#movie-page-showing')
   await page.waitForNetworkIdle()
+  await Bun.sleep(5000)
+  await page.reload()
+  await page.waitForNetworkIdle()
 
   const divShowingPage = 'div#movie-page-showing div.ml-box'
   const divComingPage = 'div#movie-page-coming div.ml-box'

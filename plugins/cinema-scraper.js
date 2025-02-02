@@ -3,6 +3,7 @@ import puppeteer from 'puppeteer'
 import { logger } from '../untils'
 import * as sf from './sf-cinemacity'
 import * as major from './major-cineplex'
+import agent from './major-cineplex/agents.json'
 
 import { JSONWrite } from '../untils/collector'
 // import flexCarousel from "./untils/line-flex"
@@ -17,34 +18,49 @@ export default async () => {
     args: isDev ? ['--fast-start', '--no-sandbox'] : ['--no-sandbox', '--disable-setuid-sandbox', '--headless', '--disable-gpu'],
   })
 
-  // Major Cineplex
-  logger.info('New page `https://www.majorcineplex.com`')
-  const majorPage = await browser.newPage()
-  await majorPage.setViewport({ width: 1440, height: 990 })
-  logger.info(' * Now Showing & Comming Soon')
+  const randomUserAgent = agent[Math.floor(Math.random() * agent.length)]
+  let majorMovies = []
+  try {
+    // Major Cineplex
+    logger.info('New page `https://www.majorcineplex.com`')
+    const majorPage = await browser.newPage()
+    await majorPage.setUserAgent(randomUserAgent)
+    await majorPage.setViewport({ width: 1440, height: 990 })
+    logger.info(' * Now Showing & Comming Soon')
 
-  const majorMovies = await major.SearchMovieAll(majorPage)
+    majorMovies = await major.SearchMovieAll(majorPage)
 
-  await majorPage.close()
+    await majorPage.close()
 
-  logger.info(' * Caching Json')
-  await JSONWrite('major-cineplex.json', majorMovies)
+    logger.info(' * Caching Json')
+    await JSONWrite('major-cineplex.json', majorMovies)
+  } catch (ex) {
+    logger.warn(ex)
+  }
 
-  // SF Cinema
-  logger.info('New page `https://www.sfcinemacity.com/`')
-  let sfPage = await browser.newPage()
-  await sfPage.setViewport({ width: 1440, height: 990 })
-  logger.info(' * Now Showing...')
-  const sfShowing = await sf.SearchMovieNowShowing(sfPage)
-  await sfPage.close()
+  let sfShowing = []
+  let sfComming = []
+  try {
+    // SF Cinema
+    logger.info('New page `https://www.sfcinemacity.com/`')
+    let sfPage = await browser.newPage()
+    await sfPage.setUserAgent(randomUserAgent)
+    await sfPage.setViewport({ width: 1440, height: 990 })
+    logger.info(' * Now Showing...')
+    sfShowing = await sf.SearchMovieNowShowing(sfPage)
+    await sfPage.close()
 
-  logger.info(' * Comming Soon...')
-  sfPage = await browser.newPage()
-  const sfComming = await sf.SearchMovieComming(sfPage)
-  await sfPage.close()
+    logger.info(' * Comming Soon...')
+    sfPage = await browser.newPage()
+    await sfPage.setUserAgent(randomUserAgent)
+    sfComming = await sf.SearchMovieComming(sfPage)
+    await sfPage.close()
 
-  logger.info(' * Caching Json')
-  await JSONWrite('sf-cinemacity.json', sfShowing.concat(sfComming))
+    logger.info(' * Caching Json')
+    await JSONWrite('sf-cinemacity.json', sfShowing.concat(sfComming))
+  } catch (ex) {
+    logger.warn(ex)
+  }
 
   await browser.close()
 
