@@ -51,7 +51,7 @@ const langSwitcher = async (page, lang) => {
 }
 
 export async function SearchMovieNowShowing(page) {
-  await Bun.sleep(1000)
+  await Bun.sleep(1_000)
   await page.goto('https://www.sfcinemacity.com/movies/now-showing')
   await page.waitForNetworkIdle()
   await langSwitcher(page, 'en')
@@ -92,7 +92,7 @@ export async function SearchMovieNowShowing(page) {
 }
 
 export async function SearchMovieComming(page) {
-  await Bun.sleep(1000)
+  await Bun.sleep(1_000)
   await page.goto('https://www.sfcinemacity.com/movies/coming-soon')
   await page.waitForNetworkIdle()
   await page.waitForSelector('.lang-switcher li.active > a')

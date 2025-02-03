@@ -9,13 +9,32 @@ import { JSONWrite } from '../untils/collector'
 // import flexCarousel from "./untils/line-flex"
 
 const isDev = Bun.env.ENV !== 'production'
+const args = [
+  '--no-sandbox',
+  '--disable-gpu',
+  '--headless',
+  '--disable-background-timer-throttling',
+  '--no-experiments',
+  '--disable-backgrounding-occluded-windows',
+  '--disable-renderer-backgrounding',
+  '--disable-web-security',
+  '--disable-features=IsolateOrigins,site-per-process',
+  '--disable-site-isolation-trials',
+  '--renderer-process-limit=1',
+  '--disable-features=SharedArrayBuffer',
+  '--disable-features=AudioServiceOutOfProcess',
+  '--disable-features=AudioServiceOutOfProcess',
+  '--disable-features=site-per-process',
+  '--disable-infobars',
+]
 
 export default async () => {
   logger.info('Puppeteer create launcher...')
   // const db = new duckdb.Database(':memory:')
   const browser = await puppeteer.launch({
-    headless: isDev,
-    args: isDev ? ['--fast-start', '--no-sandbox'] : ['--no-sandbox', '--disable-setuid-sandbox', '--headless', '--disable-gpu'],
+    headless: false,
+    timeout: 60_000,
+    args: isDev ? ['--fast-start', '--no-sandbox'] : args,
   })
 
   const randomUserAgent = agent[Math.floor(Math.random() * agent.length)]
