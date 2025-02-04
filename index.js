@@ -6,6 +6,7 @@ import weekOfYear from 'dayjs/plugin/weekOfYear'
 
 import { JSONWrite } from './untils/collector'
 import cinemaScraper from './plugins/cinema-scraper'
+import { name, version } from './package.json'
 // import flexCarousel from "./untils/line-flex"
 
 dayjs.extend(weekday)
@@ -48,7 +49,7 @@ if (parseArgs.output === 'file') {
   console.log(cinemaItems[0])
 }
 
-if (!Bun.env.STASH_API) {
+if (!Bun.env.RECEIVER_API) {
   logger.info(`Total: ${cinemaItems.length} movies`)
   process.exit(0)
 }
@@ -56,11 +57,12 @@ if (!Bun.env.STASH_API) {
 logger.info(`Uploading total: ${cinemaItems.length} movies`)
 
 for (const chunks of cinemaChunks) {
-  const res = await fetch(`${Bun.env.STASH_API}/stash/cinema`, {
+  const res = await fetch(`${Bun.env.RECEIVER_API}/stash/cinema`, {
     method: 'POST',
     headers: {
+      Authorization: Bun.env.RECEIVER_AUTH,
       'Content-Type': 'application/json',
-      'User-Agent': 'etl-cinema-scraper/v2.0',
+      'User-Agent': `${name}/${version}`,
     },
     body: JSON.stringify(chunks),
   })
