@@ -9,12 +9,13 @@ ENV DEBIAN_FRONTEND=noninteractive
 # Installs Chromium (100) package.
 RUN apk add --no-cache \
       chromium \
-      chromium-sandbox \
       nss \
       freetype \
       harfbuzz \
       ca-certificates \
       ttf-freefont
+
+RUN bun x @puppeteer/browsers install chrome@stable
 
 # Add user so we don't need --no-sandbox.
 RUN addgroup -S pptruser && adduser -S -G pptruser pptruser \
