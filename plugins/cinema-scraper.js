@@ -9,41 +9,25 @@ import { JSONWrite } from '../untils/collector'
 // import flexCarousel from "./untils/line-flex"
 
 const isDev = Bun.env.ENV !== 'production'
-const args = [
-  '--no-sandbox',
-  '--disable-gpu',
-  '--headless',
-  '--disable-background-timer-throttling',
-  '--no-experiments',
-  '--disable-backgrounding-occluded-windows',
-  '--disable-renderer-backgrounding',
-  '--disable-web-security',
-  '--disable-features=IsolateOrigins,site-per-process',
-  '--disable-site-isolation-trials',
-  '--renderer-process-limit=1',
-  '--disable-features=SharedArrayBuffer',
-  '--disable-features=AudioServiceOutOfProcess',
-  '--disable-features=AudioServiceOutOfProcess',
-  '--disable-features=site-per-process',
-  '--disable-infobars',
-]
 
+const randomUserAgent = agent[Math.floor(Math.random() * agent.length)]
 export default async () => {
   logger.info('Puppeteer create launcher...')
   // const db = new duckdb.Database(':memory:')
   const browser = await puppeteer.launch({
-    headless: false,
+    headless: isDev,
+    headers: {
+      'User-Agent': randomUserAgent,
+    },
     timeout: 60_000,
-    args: isDev ? ['--fast-start', '--no-sandbox'] : args,
+    args: isDev ? ['--fast-start', '--no-sandbox'] : ['--no-sandbox', '--disable-gpu', '--headless', '--no-experiments'],
   })
 
-  const randomUserAgent = agent[Math.floor(Math.random() * agent.length)]
   let majorMovies = []
   try {
     // Major Cineplex
     logger.info('New page `https://www.majorcineplex.com`')
     const majorPage = await browser.newPage()
-    await majorPage.setUserAgent(randomUserAgent)
     await majorPage.setViewport({ width: 1440, height: 990 })
     logger.info(' * Now Showing & Comming Soon')
 
@@ -63,7 +47,6 @@ export default async () => {
     // SF Cinema
     logger.info('New page `https://www.sfcinemacity.com/`')
     let sfPage = await browser.newPage()
-    await sfPage.setUserAgent(randomUserAgent)
     await sfPage.setViewport({ width: 1440, height: 990 })
     logger.info(' * Now Showing...')
     sfShowing = await sf.SearchMovieNowShowing(sfPage)
@@ -71,7 +54,6 @@ export default async () => {
 
     logger.info(' * Comming Soon...')
     sfPage = await browser.newPage()
-    await sfPage.setUserAgent(randomUserAgent)
     sfComming = await sf.SearchMovieComming(sfPage)
     await sfPage.close()
 
