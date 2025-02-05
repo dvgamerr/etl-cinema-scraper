@@ -1,18 +1,22 @@
-FROM --platform=linux/amd64  oven/bun:alpine
+FROM --platform=linux/arm64 oven/bun:alpine
 WORKDIR /app
+
+ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
+ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
+ENV CHROME_PATH=/usr/bin/chromium
+ENV DEBIAN_FRONTEND=noninteractive
 
 # Installs Chromium (100) package.
 RUN apk add --no-cache \
       chromium \
+      chromium-sandbox \
       nss \
       freetype \
       harfbuzz \
       ca-certificates \
       ttf-freefont \
-      nodejs \
-      yarn
+      nodejs
 
-# Tell Puppeteer to skip installing Chrome. We'll be using the installed package.
 RUN bun x @puppeteer/browsers install chrome@stable
 
 # Add user so we don't need --no-sandbox.
