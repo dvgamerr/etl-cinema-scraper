@@ -1,4 +1,4 @@
-FROM oven/bun:alpine
+FROM --platform=linux/amd64  oven/bun:alpine
 WORKDIR /app
 
 # Installs Chromium (100) package.
