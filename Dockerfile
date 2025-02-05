@@ -1,4 +1,4 @@
-FROM --platform=linux/arm64 oven/bun:alpine
+FROM oven/bun:alpine
 WORKDIR /app
 
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
@@ -14,10 +14,7 @@ RUN apk add --no-cache \
       freetype \
       harfbuzz \
       ca-certificates \
-      ttf-freefont \
-      nodejs
-
-RUN bun x @puppeteer/browsers install chrome@stable
+      ttf-freefont
 
 # Add user so we don't need --no-sandbox.
 RUN addgroup -S pptruser && adduser -S -G pptruser pptruser \
