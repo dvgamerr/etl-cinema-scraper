@@ -1,6 +1,6 @@
 {
   "name": "etl-cinema-scraper",
-  "version": "v2.1",
+  "version": "v2.2",
   "module": "index.js",
   "type": "module",
   "scripts": {
