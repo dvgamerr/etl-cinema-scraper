@@ -12,7 +12,7 @@ dayjs.extend(weekday)
 dayjs.extend(weekOfYear)
 
 let rawItems = []
-if (parseArgs.dryrun === true) {
+if (parseArgs.dryrun) {
   const major = await JSONRead('major-cineplex.json')
   const sf = await JSONRead('sf-cinemacity.json')
   rawItems = [...major, ...sf]

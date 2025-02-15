@@ -15,11 +15,11 @@ export default async () => {
   logger.info('Puppeteer create launcher...')
   // const db = new duckdb.Database(':memory:')
   const browser = await puppeteer.launch({
-    headless: isDev,
+    headless: !isDev,
     headers: {
       'User-Agent': randomUserAgent,
     },
-    timeout: 60_000,
+    timeout: 60000,
     args: isDev ? ['--fast-start', '--no-sandbox'] : ['--no-sandbox', '--disable-gpu', '--headless', '--no-experiments'],
   })
 

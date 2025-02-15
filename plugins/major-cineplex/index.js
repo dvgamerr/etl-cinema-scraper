@@ -5,14 +5,11 @@ export async function SearchMovieAll(page) {
   logger.debug('Open majorcineplex')
   await page.goto('https://www.majorcineplex.com/movie#movie-page-showing')
   await page.waitForNetworkIdle()
-  await Bun.sleep(5_000)
-  await page.reload()
-  await page.waitForNetworkIdle()
 
   const divShowingPage = 'div#movie-page-showing div.ml-box'
   const divComingPage = 'div#movie-page-coming div.ml-box'
 
-  await Bun.sleep(1_000)
+  await Bun.sleep(1000)
 
   const cinemaShowingTh = await scrapingCinema(await page.$$(divShowingPage))
   if (!cinemaShowingTh.length) {
@@ -23,7 +20,7 @@ export async function SearchMovieAll(page) {
     logger.warn('SearchMovieCommingSoon is empty')
   }
 
-  await Bun.sleep(2_000)
+  await Bun.sleep(2000)
   const selectLang = await page.$('#SelectLang')
   if (!selectLang) throw new Error('#SelectLang not exists')
   await selectLang.evaluate((e) => e.click())
@@ -33,7 +30,7 @@ export async function SearchMovieAll(page) {
   await page.click('a.change_lang[data-id="en"]')
   logger.debug(' div#movie-page-showing')
   await page.waitForSelector('div#movie-page-showing div.ml-box')
-  await Bun.sleep(2_000)
+  await Bun.sleep(2000)
 
   const cinemaShowingEn = await scrapingCinema(await page.$$(divShowingPage))
   if (!cinemaShowingEn.length) {
