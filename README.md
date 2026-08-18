@@ -35,8 +35,7 @@
 ## 🚀 Quick Start
 
 ### Prerequisites
-- [Bun.js](https://bun.sh/) runtime
-- Node.js 18+ (if using npm/yarn)
+- [Bun](https://bun.sh/) 1.3.14 or newer
 
 ### Installation
 
