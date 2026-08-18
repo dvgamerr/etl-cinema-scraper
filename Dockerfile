@@ -26,12 +26,12 @@ RUN addgroup -S pptruser && adduser -S -G pptruser pptruser \
 # Run everything after as non-privileged user.
 USER pptruser
 
-COPY index.js package.json bun.lockb .
+COPY index.js package.json bun.lock ./
 
 COPY ./untils/ ./untils/
 COPY ./plugins/ ./plugins/
 
-RUN bun i --ignore-scripts --production && \
+RUN bun install --frozen-lockfile --ignore-scripts --production && \
     bun ./node_modules/puppeteer/install.mjs
 
 CMD ["bun", "run", "/app/index.js"]
